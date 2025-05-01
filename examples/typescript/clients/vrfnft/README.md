@@ -4,6 +4,8 @@ This example demonstrates how a client pays USDC via the `x402` protocol (`exact
 
 Based on the value returned by the VRF result, one of four characters will be selected for the NFT. The NFT and its image can be viewed on [OpenSea](https://testnets.opensea.io/) by connecting to Base Sepolia and searching for the NFT contract address.
 
+The code for the Smart Contract that implements [Chainlink VRF](https://docs.chain.link/vrf) and mints the NFT is already deployed for you, but a reference version can be seen in `./contract/VRFNFT.sol`
+
 ## Architecture / How it works.
 
 This example involves three components running concurrently:
