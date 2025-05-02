@@ -19,7 +19,7 @@ This example involves three components running concurrently:
     - Calls the **Facilitator's** `/settle` endpoint to trigger the actual USDC transfer from the client to the resource server's wallet.
     - Responds to the client with the outcome (including minting and settlement transaction hashes).
 3.  **Client (`client.ts`):** A script that:
-    - Uses `axios` with the `x402/axios` interceptor.
+    - Uses `axios` with the `x402/axios` interceptor. The implementation of this custom interceptor is in `/typescript/packages/x402-axios`
     - Makes a request to the **Resource Server's** `/request-mint` endpoint.
     - The interceptor automatically handles the `402` response, prompts the client's wallet (via `viem`) to sign the EIP-3009 authorization for the USDC payment, constructs the `X-PAYMENT` header, and retries the request.
 
@@ -45,7 +45,7 @@ This example involves three components running concurrently:
 
    ```bash
    cd clients/vrfnft
-   npm install
+   pnpm install
    ```
 
 4. **Environment Variables (`example/.env`):** Create a `.env` file in the `example` directory with the following variables (replace placeholder values):
@@ -96,7 +96,7 @@ You need three separate terminals, all navigated to the `example` directory.
 
     ```bash
     cd examples/typescript/clients/vrfnft
-    npm run client
+    pnpm run client
     ```
 
 ## Expected Output
