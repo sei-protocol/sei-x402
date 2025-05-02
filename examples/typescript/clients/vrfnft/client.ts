@@ -60,7 +60,7 @@ async function makeMintRequest() {
     console.log(" Status:", response.status);
     console.log(" Data:", JSON.stringify(response.data, null, 2));
     console.log(
-      "check the NFT on testnet.opensea.io, using the NFT Contract's address: '0xcD8841f9a8Dbc483386fD80ab6E9FD9656Da39A2'. You can also check the NFT contract's transactions on Base Sepolia's explorer: https://sepolia.basescan.org/address/0xcD8841f9a8Dbc483386fD80ab6E9FD9656Da39A2.",
+      "Check the NFT on testnet.opensea.io, using the NFT Contract's address: '0xcD8841f9a8Dbc483386fD80ab6E9FD9656Da39A2'. You can also check the NFT contract's transactions on Base Sepolia's explorer: https://sepolia.basescan.org/address/0xcD8841f9a8Dbc483386fD80ab6E9FD9656Da39A2.",
     );
   } catch (error: any) {
     console.error("Client: Request failed!");

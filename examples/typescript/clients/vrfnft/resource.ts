@@ -11,18 +11,19 @@ import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 
 // --- Types for Payment Handling ---
+// --- Types for Payment Handling ---
 type PaymentDetails = {
   scheme: string;
-  networkId: string;
+  network: string;
   maxAmountRequired: string; // Amount in wei
   resource: string;
   description: string;
   mimeType: string;
-  outputSchema?: object | null;
-  payToAddress: string;
-  requiredDeadlineSeconds: number;
-  usdcAddress: string;
-  extra: object | null;
+  payTo: Hex;
+  asset: Hex;
+  maxTimeoutSeconds: number;
+  outputSchema: object;
+  extra: object;
 };
 type ExactEvmPayload = {
   signature: Hex;
@@ -70,7 +71,8 @@ if (!resourceServerPrivateKey || !providerUrl) {
 
 // --- Constants and Setup ---
 const PORT = 4023;
-const FACILITATOR_URL = "http://localhost:3002"; // Use correct facilitator port 3002
+const FACILITATOR_PORT = 3000;
+const FACILITATOR_URL = `http://localhost:${FACILITATOR_PORT}`;
 const NFT_CONTRACT_ADDRESS = "0xcD8841f9a8Dbc483386fD80ab6E9FD9656Da39A2" as Hex;
 const USDC_CONTRACT_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as Hex; // Base Sepolia USDC
 const REQUIRED_USDC_PAYMENT = "50000"; // 0.05 USDC (50000 wei, assuming 6 decimals)
@@ -80,7 +82,7 @@ const SCHEME = "exact";
 
 // --- Viem Client for Resource Server ---
 const resourceServerAccount = privateKeyToAccount(resourceServerPrivateKey as Hex);
-const resourceServerClient = createWalletClient({
+const resourceServerWalletClient = createWalletClient({
   account: resourceServerAccount,
   chain: baseSepolia,
   transport: http(providerUrl),
@@ -96,7 +98,7 @@ const nftContractAbi = [
 // --- Payment Details object (matching PaymentRequirementsSchema) ---
 // This format is needed for both the 402 response (for x402-axios)
 // and the facilitator calls (for its internal validation).
-const paymentDetailsRequired = {
+const paymentDetailsRequired: PaymentDetails = {
   scheme: SCHEME,
   network: baseSepolia.network, // Use network name string
   maxAmountRequired: REQUIRED_USDC_PAYMENT,
@@ -119,9 +121,14 @@ app.post("/request-mint", async c => {
   console.log("INFO ResourceServer: Received POST /request-mint");
   const paymentHeaderBase64 = c.req.header("X-PAYMENT");
 
-  // 1. Check for Payment Header
+  // 1. Return 402 if no payment header as per the x402 spec.
   if (!paymentHeaderBase64) {
     console.log("INFO ResourceServer: No X-PAYMENT header found. Responding 402.");
+    console.info("Resource Server sent back: ", {
+      x402Version: 1,
+      accepts: [paymentDetailsRequired],
+      error: "Payment required",
+    });
     // Use the single, correctly formatted details object
     return c.json(
       { x402Version: 1, accepts: [paymentDetailsRequired], error: "Payment required" },
@@ -148,13 +155,13 @@ app.post("/request-mint", async c => {
   }
 
   // >>> Decode payment header for facilitator calls <<<
-  let decodedPaymentPayload;
+  // Note @dev :  This should technically be caught by the previous block, but as a safeguard:
+  let decodedPaymentPayload: XPaymentHeader;
   try {
     const paymentHeaderJson = Buffer.from(paymentHeaderBase64, "base64").toString("utf-8");
     // We could validate this against PaymentPayloadSchema here, but facilitator also validates
     decodedPaymentPayload = JSON.parse(paymentHeaderJson);
   } catch (err: any) {
-    // This should technically be caught by the previous block, but as a safeguard:
     console.error(
       "ERROR ResourceServer: Double-check failed on decoding/parsing X-PAYMENT header:",
       err,
@@ -198,13 +205,13 @@ app.post("/request-mint", async c => {
   }
 
   // 4. Mint NFT (Verification Passed)
-  const recipientAddress = paymentHeader.payload.authorization.from;
+  const recipientAddress = decodedPaymentPayload.payload.authorization.from;
   let mintTxHash: Hex | null = null;
   try {
     console.log(
       `INFO ResourceServer: Initiating NFT mint for ${recipientAddress} on contract ${NFT_CONTRACT_ADDRESS}...`,
     );
-    mintTxHash = await resourceServerClient.writeContract({
+    mintTxHash = await resourceServerWalletClient.writeContract({
       address: NFT_CONTRACT_ADDRESS,
       abi: nftContractAbi,
       functionName: "requestNFT",
