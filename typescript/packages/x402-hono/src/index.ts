@@ -11,6 +11,7 @@ import {
 } from "x402/shared";
 import {
   FacilitatorConfig,
+  moneySchema,
   PaymentPayload,
   PaymentRequirements,
   Resource,
@@ -28,7 +29,7 @@ import { useFacilitator } from "x402/verify";
  * 4. Verifies and settles payments
  * 5. Sets appropriate response headers
  *
- * @param payToAddress - Address to receive payments
+ * @param payTo - Address to receive payments
  * @param routes - Route configuration for payment amounts
  * @param facilitator - Configuration for the payment facilitator service
  *
@@ -57,7 +58,7 @@ import { useFacilitator } from "x402/verify";
  * ```
  */
 export function paymentMiddleware(
-  payToAddress: Address,
+  payTo: Address,
   routes: RoutesConfig,
   facilitator?: FacilitatorConfig,
 ) {
@@ -93,7 +94,7 @@ export function paymentMiddleware(
         resource: resourceUrl,
         description: description ?? "",
         mimeType: mimeType ?? "application/json",
-        payTo: payToAddress,
+        payTo,
         maxTimeoutSeconds: maxTimeoutSeconds ?? 300,
         asset: asset?.address ?? "",
         outputSchema,
@@ -108,10 +109,18 @@ export function paymentMiddleware(
 
     if (!payment) {
       if (isWebBrowser) {
-        const displayAmount =
-          typeof price === "string" || typeof price === "number"
-            ? Number(price)
-            : Number(price.amount) / 10 ** price.asset.decimals;
+        let displayAmount: number;
+        if (typeof price === "string" || typeof price === "number") {
+          const parsed = moneySchema.safeParse(price);
+          if (parsed.success) {
+            displayAmount = parsed.data;
+          } else {
+            displayAmount = Number.NaN;
+          }
+        } else {
+          displayAmount = Number(price.amount) / 10 ** price.asset.decimals;
+        }
+
         const html =
           customPaywallHtml ??
           getPaywallHtml({

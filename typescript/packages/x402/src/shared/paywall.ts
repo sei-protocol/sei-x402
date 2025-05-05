@@ -24,7 +24,10 @@ export function getPaywallHtml({
   paymentRequirements,
   currentUrl,
 }: PaywallOptions): string {
-  const selectedPaymentRequirements = selectPaymentRequirements(paymentRequirements);
+  const selectedPaymentRequirements = selectPaymentRequirements(
+    paymentRequirements,
+    testnet ? "base-sepolia" : "base",
+  );
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,7 +333,7 @@ export function getPaywallHtml({
     const from = client.account.address;
 
     const validAfter = BigInt(
-      Math.floor(Date.now() / 1000) - 5 // 1 block (2s) before to account for block timestamping
+      Math.floor(Date.now() / 1000) - 60 // 60 seconds before
     );
     const validBefore = BigInt(
       Math.floor(Date.now() / 1000 + window.x402.paymentRequirements.maxTimeoutSeconds)

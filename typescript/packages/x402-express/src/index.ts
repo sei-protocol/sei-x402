@@ -11,6 +11,7 @@ import {
 } from "x402/shared";
 import {
   FacilitatorConfig,
+  moneySchema,
   PaymentPayload,
   PaymentRequirements,
   Resource,
@@ -22,7 +23,7 @@ import { useFacilitator } from "x402/verify";
 /**
  * Creates a payment middleware factory for Express
  *
- * @param payToAddress - The Ethereum address to receive payments
+ * @param payTo - The Ethereum address to receive payments
  * @param routes - Configuration for protected routes and their payment requirements
  * @param facilitator - Optional configuration for the payment facilitator service
  * @returns An Express middleware handler
@@ -38,7 +39,7 @@ import { useFacilitator } from "x402/verify";
  *       settle: { "Authorization": "Bearer token" }
  *     })
  *   },
- *   payToAddress: '0x123...',
+ *   payTo: '0x123...',
  *   routes: {
  *     '/weather/*': {
  *       price: '$0.001', // USDC amount in dollars
@@ -54,7 +55,7 @@ import { useFacilitator } from "x402/verify";
  *   facilitator: {
  *     url: 'https://facilitator.example.com'
  *   },
- *   payToAddress: '0x123...',
+ *   payTo: '0x123...',
  *   routes: {
  *     price: '$0.01',
  *     network: 'base'
@@ -63,7 +64,7 @@ import { useFacilitator } from "x402/verify";
  * ```
  */
 export function paymentMiddleware(
-  payToAddress: Address,
+  payTo: Address,
   routes: RoutesConfig,
   facilitator?: FacilitatorConfig,
 ) {
@@ -109,7 +110,7 @@ export function paymentMiddleware(
         resource: resourceUrl,
         description: description ?? "",
         mimeType: mimeType ?? "",
-        payTo: payToAddress,
+        payTo,
         maxTimeoutSeconds: maxTimeoutSeconds ?? 60,
         asset: asset.address,
         outputSchema: outputSchema ?? undefined,
@@ -127,10 +128,17 @@ export function paymentMiddleware(
 
     if (!payment) {
       if (isWebBrowser) {
-        const displayAmount =
-          typeof price === "string" || typeof price === "number"
-            ? Number(price)
-            : Number(price.amount) / 10 ** price.asset.decimals;
+        let displayAmount: number;
+        if (typeof price === "string" || typeof price === "number") {
+          const parsed = moneySchema.safeParse(price);
+          if (parsed.success) {
+            displayAmount = parsed.data;
+          } else {
+            displayAmount = Number.NaN;
+          }
+        } else {
+          displayAmount = Number(price.amount) / 10 ** price.asset.decimals;
+        }
 
         const html =
           customPaywallHtml ||
