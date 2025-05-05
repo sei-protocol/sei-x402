@@ -18,10 +18,10 @@ This package requires CDP API keys from the [Coinbase Developer Platform](https:
 ## Quick Start
 
 ```typescript
-// Option 1: Import the default facilitator config
+// Option 1: Import the default facilitator config (assumes CDP_API_KEY_ID and CDP_API_KEY_SECRET environment variables)
 import { facilitator } from "@coinbase/x402";
 
-// Option 2: Create a custom facilitator config with your own credentials
+// Option 2: Create a custom facilitator config, passing in your credentials
 import { createFacilitatorConfig } from "@coinbase/x402";
 
 const facilitator = createFacilitatorConfig(
