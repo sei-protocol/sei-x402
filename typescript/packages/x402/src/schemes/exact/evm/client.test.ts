@@ -57,7 +57,7 @@ describe("preparePaymentHeader", () => {
           from: mockFromAddress,
           to: mockPaymentRequirements.payTo,
           value: mockPaymentRequirements.maxAmountRequired,
-          validAfter: (currentTime - 5).toString(),
+          validAfter: (currentTime - 60).toString(),
           validBefore: (currentTime + mockPaymentRequirements.maxTimeoutSeconds).toString(),
           nonce: expect.any(String),
         },
@@ -74,12 +74,12 @@ describe("preparePaymentHeader", () => {
     expect(result1.payload.authorization.nonce).not.toBe(result2.payload.authorization.nonce);
   });
 
-  it("should calculate validAfter as 5 seconds before current time", () => {
+  it("should calculate validAfter as 60 seconds before current time", () => {
     const result = preparePaymentHeader(mockFromAddress, 1, mockPaymentRequirements);
     const currentTime = Math.floor(Date.now() / 1000);
     const validAfter = parseInt(result.payload.authorization.validAfter);
 
-    expect(validAfter).toBe(currentTime - 5);
+    expect(validAfter).toBe(currentTime - 60);
   });
 
   it("should calculate validBefore as current time plus maxTimeoutSeconds", () => {
