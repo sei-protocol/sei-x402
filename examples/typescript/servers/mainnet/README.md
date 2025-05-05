@@ -1,32 +1,34 @@
-# x402-express Example Server
+# @coinbase/x402 Example Mainnet Server
 
-This is an example Express.js server that demonstrates how to use the `x402-express` middleware to implement paywall functionality in your API endpoints.
+This example demonstrates how to accept real USDC payments on Base mainnet using Coinbase's [hosted x402 facilitator](https://docs.cdp.coinbase.com/x402/docs/welcome).
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
-- A valid x402 facilitator (you can use the example express server at `examples/typescript/facilitator`)
+- Node.js v20+ (install via [nvm](https://github.com/nvm-sh/nvm))
+- pnpm v10 (install via [pnpm.io/installation](https://pnpm.io/installation))
+- CDP api keys (access via [Coinbase Developer Platform](https://docs.cdp.coinbase.com/))
 - A valid Ethereum address for receiving payments
 
 ## Setup
 
-1. First, start the local facilitator server:
+1. Copy `.env-local` to `.env` and add your Ethereum address to receive payments:
 
 ```bash
-cd ../facilitator
-# Ensure .env is setup
-pnpm install
-pnpm dev
+cp .env-local .env
 ```
 
-The facilitator will run on http://localhost:3002
+2. Install and build all packages from the typescript examples root:
+```bash
+cd ../../
+pnpm install
+pnpm build
+cd servers/mainnet
+```
 
-2. Create a `.env` file in the root directory with the following variables:
-```env
-FACILITATOR_URL=http://localhost:3002
-ADDRESS=0xYourEthereumAddress
-NETWORK=base # or "base-sepolia" for testnet
-PORT=3001
+3. Run the server
+```bash
+pnpm install
+pnpm dev
 ```
 
 ## Testing the Server
@@ -37,77 +39,14 @@ You can test the server using one of the example clients:
 ```bash
 cd ../clients/fetch
 # Ensure .env is setup
-npm install
-npm dev
+pnpm install
+pnpm dev
 ```
 
 ### Using the Axios Client
 ```bash
 cd ../clients/axios
 # Ensure .env is setup
-npm install
-npm dev
-```
-
-These clients will demonstrate how to:
-1. Make an initial request to get payment requirements
-2. Process the payment requirements
-3. Make a second request with the payment token
-
-## Example Endpoint
-
-The server includes a single example endpoint at `/weather` that requires a payment of $0.001 to access. The endpoint returns a simple weather report.
-
-## Response Format
-
-### Payment Required (402)
-```json
-{
-  "error": "X-PAYMENT header is required",
-  "paymentRequirements": {
-    "scheme": "exact",
-    "network": "base",
-    "maxAmountRequired": "1000",
-    "resource": "http://localhost:3001/weather",
-    "description": "",
-    "mimeType": "",
-    "payTo": "0xYourAddress",
-    "maxTimeoutSeconds": 60,
-    "asset": "0x...",
-    "outputSchema": null,
-    "extra": null
-  }
-}
-```
-
-### Successful Response
-```ts
-// Body
-{
-  "report": {
-    "weather": "sunny",
-    "temperature": 70
-  }
-}
-// Headers
-{
-  "X-PAYMENT-RESPONSE": "..." // Encoded response object
-}
-```
-
-## Extending the Example
-
-To add more paid endpoints, follow the pattern in the example:
-
-```typescript
-app.get(
-  "/your-endpoint",
-  paymentMiddleware("$0.10", {
-    description: "Description of your endpoint",
-    resource: `http://localhost:${port}/your-endpoint`,
-  }),
-  (req, res) => {
-    // Your endpoint logic here
-  }
-);
+pnpm install
+pnpm dev
 ```
