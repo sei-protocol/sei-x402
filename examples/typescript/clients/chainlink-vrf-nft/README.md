@@ -44,7 +44,7 @@ This example involves three components running concurrently:
 3. **Install This Project's Dependencies:**
 
    ```bash
-   cd clients/vrfnft
+   cd clients/chainlink-vrf-nft
    pnpm install
    ```
 
@@ -85,7 +85,7 @@ You need three separate terminals, all navigated to the `example` directory.
     Start a new terminal instance
 
     ```bash
-    cd examples/typescript/clients/vrfnft
+    cd examples/typescript/clients/chainlink-vrf-nft
     npx pnpm install
     pnpm run resource
     ```
@@ -95,7 +95,7 @@ You need three separate terminals, all navigated to the `example` directory.
     Start a new terminal instance
 
     ```bash
-    cd examples/typescript/clients/vrfnft
+    cd examples/typescript/clients/chainlink-vrf-nft
     pnpm run client
     ```
 

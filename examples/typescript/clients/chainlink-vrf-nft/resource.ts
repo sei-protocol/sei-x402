@@ -11,7 +11,6 @@ import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 
 // --- Types for Payment Handling ---
-// --- Types for Payment Handling ---
 type PaymentDetails = {
   scheme: string;
   network: string;
@@ -25,6 +24,7 @@ type PaymentDetails = {
   outputSchema: object;
   extra: object;
 };
+
 type ExactEvmPayload = {
   signature: Hex;
   authorization: {
@@ -37,6 +37,7 @@ type ExactEvmPayload = {
     version: string;
   };
 };
+
 type XPaymentHeader = {
   x402Version: number;
   scheme: string;
@@ -76,7 +77,7 @@ const FACILITATOR_URL = `http://localhost:${FACILITATOR_PORT}`;
 const NFT_CONTRACT_ADDRESS = "0xcD8841f9a8Dbc483386fD80ab6E9FD9656Da39A2" as Hex;
 const USDC_CONTRACT_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as Hex; // Base Sepolia USDC
 const REQUIRED_USDC_PAYMENT = "50000"; // 0.05 USDC (50000 wei, assuming 6 decimals)
-const PAYMENT_RECIPIENT_ADDRESS = "0x87002564F1C7b8F51e96CA7D545e43402BF0b4Ab" as Hex; // Resource server wallet
+const PAYMENT_RECIPIENT_ADDRESS = "0x52eE5a881287486573cF5CB5e7E7D92F30b03014" as Hex; // TODO @dev - put in your second wallet address as Resource server wallet
 const MINT_ETH_VALUE_STR = "0.01"; // Estimated ETH needed for VRF fee
 const SCHEME = "exact";
 
