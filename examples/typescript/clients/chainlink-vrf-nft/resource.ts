@@ -110,7 +110,10 @@ const paymentDetailsRequired: PaymentDetails = {
   maxTimeoutSeconds: 60,
   asset: USDC_CONTRACT_ADDRESS,
   outputSchema: {},
-  extra: {},
+  extra: {
+    name: "",
+    version: "2"
+  },
 };
 
 // --- Hono App ---
@@ -142,6 +145,7 @@ app.post("/request-mint", async c => {
   try {
     const paymentHeaderJson = Buffer.from(paymentHeaderBase64, "base64").toString("utf-8");
     paymentHeader = JSON.parse(paymentHeaderJson);
+    console.log("DEBUG: Decoded X-PAYMENT header:", JSON.stringify(paymentHeader, null, 2)); // Log the decoded payment header
     // Basic validation - check network name now
     if (
       paymentHeader.scheme !== SCHEME ||

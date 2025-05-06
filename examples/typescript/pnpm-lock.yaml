@@ -564,6 +564,37 @@ importers:
         specifier: ^5.3.0
         version: 5.8.3
 
+  clients/chainlink-vrf-nft:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.13.8
+        version: 1.14.1(hono@4.7.7)
+      axios:
+        specifier: ^1.7.9
+        version: 1.8.4
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.5.0
+      hono:
+        specifier: ^4.7.2
+        version: 4.7.7
+      viem:
+        specifier: ^2.23.5
+        version: 2.28.3(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.3)
+      x402:
+        specifier: file:../../../../typescript/packages/x402
+        version: file:../../typescript/packages/x402(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      x402-axios:
+        specifier: workspace:*
+        version: link:../../../../typescript/packages/x402-axios
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.5
+        version: 22.15.3
+      tsx:
+        specifier: ^4.19.3
+        version: 4.19.3
+
   clients/fetch:
     dependencies:
       axios:
@@ -682,37 +713,6 @@ importers:
       typescript:
         specifier: ^5.3.0
         version: 5.8.3
-
-  clients/vrfnft:
-    dependencies:
-      '@hono/node-server':
-        specifier: ^1.13.8
-        version: 1.14.1(hono@4.7.7)
-      axios:
-        specifier: ^1.7.9
-        version: 1.8.4
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.5.0
-      hono:
-        specifier: ^4.7.2
-        version: 4.7.7
-      viem:
-        specifier: ^2.23.5
-        version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.3)
-      x402:
-        specifier: file:../../../../typescript/packages/x402
-        version: link:../../../../typescript/packages/x402
-      x402-axios:
-        specifier: workspace:*
-        version: link:../../../../typescript/packages/x402-axios
-    devDependencies:
-      '@types/node':
-        specifier: ^22.13.5
-        version: 22.14.1
-      tsx:
-        specifier: ^4.19.3
-        version: 4.19.3
 
   facilitator:
     dependencies:
@@ -9630,6 +9630,14 @@ snapshots:
     optionalDependencies:
       vite: 6.3.2(@types/node@22.14.1)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
 
+  '@vitest/mocker@3.1.1(vite@6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1))':
+    dependencies:
+      '@vitest/spy': 3.1.1
+      estree-walker: 3.0.3
+      magic-string: 0.30.17
+    optionalDependencies:
+      vite: 6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
+
   '@vitest/pretty-format@3.1.1':
     dependencies:
       tinyrainbow: 2.0.0
@@ -13908,6 +13916,27 @@ snapshots:
       - tsx
       - yaml
 
+  vite-node@3.1.1(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1):
+    dependencies:
+      cac: 6.7.14
+      debug: 4.4.0
+      es-module-lexer: 1.6.0
+      pathe: 2.0.3
+      vite: 6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
+    transitivePeerDependencies:
+      - '@types/node'
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - tsx
+      - yaml
+
   vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.2(@types/node@22.14.1)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)):
     dependencies:
       debug: 4.4.0
@@ -13915,6 +13944,17 @@ snapshots:
       tsconfck: 3.1.5(typescript@5.8.3)
     optionalDependencies:
       vite: 6.3.2(@types/node@22.14.1)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
+  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)):
+    dependencies:
+      debug: 4.4.0
+      globrex: 0.1.2
+      tsconfck: 3.1.5(typescript@5.8.3)
+    optionalDependencies:
+      vite: 6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
