@@ -100,7 +100,10 @@ func setupTest(t *testing.T, amount *big.Float, address string, config TestServe
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
-	allOpts := append([]x402gin.Options{x402gin.WithFacilitatorURL(facilitatorServer.URL)}, opts...)
+	facilitatorConfig := &types.FacilitatorConfig{
+		URL: facilitatorServer.URL,
+	}
+	allOpts := append([]x402gin.Options{x402gin.WithFacilitatorConfig(facilitatorConfig)}, opts...)
 
 	router.GET("/protected", x402gin.PaymentMiddleware(amount, address, allOpts...), func(c *gin.Context) {
 		c.String(http.StatusOK, "success")

@@ -14,18 +14,23 @@ const DefaultFacilitatorURL = "https://x402.org/facilitator"
 
 // FacilitatorClient represents a facilitator client for verifying and settling payments
 type FacilitatorClient struct {
-	URL        string
-	HTTPClient *http.Client
+	URL               string
+	HTTPClient        *http.Client
+	CreateAuthHeaders func() (map[string]map[string]string, error)
 }
 
 // NewFacilitatorClient creates a new facilitator client
-func NewFacilitatorClient(url string) *FacilitatorClient {
-	if url == "" {
-		url = DefaultFacilitatorURL
+func NewFacilitatorClient(config *types.FacilitatorConfig) *FacilitatorClient {
+	if config == nil {
+		config = &types.FacilitatorConfig{
+			URL: DefaultFacilitatorURL,
+		}
 	}
+
 	return &FacilitatorClient{
-		URL:        url,
-		HTTPClient: http.DefaultClient,
+		URL:               config.URL,
+		HTTPClient:        http.DefaultClient,
+		CreateAuthHeaders: config.CreateAuthHeaders,
 	}
 }
 
@@ -46,6 +51,19 @@ func (c *FacilitatorClient) Verify(payload *types.PaymentPayload, requirements *
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	// Add auth headers if available
+	if c.CreateAuthHeaders != nil {
+		headers, err := c.CreateAuthHeaders()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create auth headers: %w", err)
+		}
+		if verifyHeaders, ok := headers["verify"]; ok {
+			for key, value := range verifyHeaders {
+				req.Header.Set(key, value)
+			}
+		}
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -82,6 +100,19 @@ func (c *FacilitatorClient) Settle(payload *types.PaymentPayload, requirements *
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	// Add auth headers if available
+	if c.CreateAuthHeaders != nil {
+		headers, err := c.CreateAuthHeaders()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create auth headers: %w", err)
+		}
+		if settleHeaders, ok := headers["settle"]; ok {
+			for key, value := range settleHeaders {
+				req.Header.Set(key, value)
+			}
+		}
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {

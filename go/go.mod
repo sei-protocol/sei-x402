@@ -3,6 +3,7 @@ module github.com/coinbase/x402/go
 go 1.23.3
 
 require (
+	github.com/coinbase/cdp-sdk/go v0.0.0-20250506223104-85d38372d771
 	github.com/gin-gonic/gin v1.10.0
 	github.com/stretchr/testify v1.10.0
 )
@@ -18,8 +19,11 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

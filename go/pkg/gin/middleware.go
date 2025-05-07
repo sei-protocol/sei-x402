@@ -21,7 +21,7 @@ type PaymentMiddlewareOptions struct {
 	MimeType          string
 	MaxTimeoutSeconds int
 	OutputSchema      *json.RawMessage
-	FacilitatorURL    string
+	FacilitatorConfig *types.FacilitatorConfig
 	Testnet           bool
 	CustomPaywallHTML string
 	Resource          string
@@ -59,10 +59,10 @@ func WithOutputSchema(outputSchema *json.RawMessage) Options {
 	}
 }
 
-// WithFacilitatorURL is an option for the PaymentMiddleware to set the facilitator URL.
-func WithFacilitatorURL(facilitatorURL string) Options {
+// WithFacilitatorConfig is an option for the PaymentMiddleware to set the facilitator config.
+func WithFacilitatorConfig(config *types.FacilitatorConfig) Options {
 	return func(options *PaymentMiddlewareOptions) {
-		options.FacilitatorURL = facilitatorURL
+		options.FacilitatorConfig = config
 	}
 }
 
@@ -97,7 +97,9 @@ func WithResourceRootURL(resourceRootURL string) Options {
 // Amount: the decimal denominated amount to charge (ex: 0.01 for 1 cent)
 func PaymentMiddleware(amount *big.Float, address string, opts ...Options) gin.HandlerFunc {
 	options := &PaymentMiddlewareOptions{
-		FacilitatorURL:    facilitatorclient.DefaultFacilitatorURL,
+		FacilitatorConfig: &types.FacilitatorConfig{
+			URL: facilitatorclient.DefaultFacilitatorURL,
+		},
 		MaxTimeoutSeconds: 60,
 		Testnet:           true,
 	}
@@ -110,7 +112,7 @@ func PaymentMiddleware(amount *big.Float, address string, opts ...Options) gin.H
 		var (
 			network              = "base"
 			usdcAddress          = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-			facilitatorClient    = facilitatorclient.NewFacilitatorClient(options.FacilitatorURL)
+			facilitatorClient    = facilitatorclient.NewFacilitatorClient(options.FacilitatorConfig)
 			maxAmountRequired, _ = new(big.Float).Mul(amount, big.NewFloat(1e6)).Int(nil)
 		)
 
