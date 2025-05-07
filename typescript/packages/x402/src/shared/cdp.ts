@@ -1,7 +1,7 @@
 import { generateJwt } from "@coinbase/cdp-sdk/auth";
 import { version } from "../version";
 
-const SDK_VERSION = "1.6.0";
+const SDK_VERSION = "1.1.1";
 
 /**
  * Creates an authorization header for a request to the Coinbase API.
