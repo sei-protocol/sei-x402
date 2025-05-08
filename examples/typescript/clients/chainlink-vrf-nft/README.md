@@ -2,7 +2,7 @@
 
 This example demonstrates how a client pays USDC via the `x402` protocol (`exact` scheme) to a custom resource server. This resource server, upon successful payment verification and settlement via a facilitator, then uses its own funds to pay ETH and mint a VRF NFT to the client's address.
 
-Based on the value returned by the VRF result, one of four characters will be selected for the NFT. The NFT and its image can be viewed on [OpenSea](https://testnets.opensea.io/) by connecting to Base Sepolia and searching for the NFT contract address.
+Based on the value returned by the VRF result, one of four characters will be selected for the NFT. The NFT and its image can be viewed on [OpenSea](https://testnets.opensea.io/) by connecting to Base Sepolia and searching for the NFT contract address. The source code for the contract can be viewed [here](https://sepolia.basescan.org/address/0xcD8841f9a8Dbc483386fD80ab6E9FD9656Da39A2#code).
 
 ## Architecture
 
