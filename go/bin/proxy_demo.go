@@ -58,16 +58,15 @@ func main() {
 }
 
 type ProxyConfig struct {
-	TargetURL         string            `json:"targetURL"`
-	Amount            float64           `json:"amount"`
-	PayTo             string            `json:"payTo"`
-	Description       string            `json:"description"`
-	FacilitatorURL    string            `json:"facilitatorURL"`
-	MimeType          string            `json:"mimeType"`
-	MaxTimeoutSeconds int               `json:"maxTimeoutSeconds"`
-	Testnet           bool              `json:"testnet"`
-	Headers           map[string]string `json:"headers"`
-	// Optional auth header creation function
+	TargetURL         string                                       `json:"targetURL"`
+	Amount            float64                                      `json:"amount"`
+	PayTo             string                                       `json:"payTo"`
+	Description       string                                       `json:"description"`
+	FacilitatorURL    string                                       `json:"facilitatorURL"`
+	MimeType          string                                       `json:"mimeType"`
+	MaxTimeoutSeconds int                                          `json:"maxTimeoutSeconds"`
+	Testnet           bool                                         `json:"testnet"`
+	Headers           map[string]string                            `json:"headers"`
 	CreateAuthHeaders func() (map[string]map[string]string, error) `json:"-"`
 }
 
