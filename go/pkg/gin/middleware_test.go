@@ -254,8 +254,8 @@ func TestPaymentMiddleware_SettlementServerError(t *testing.T) {
 	req.Header.Set("X-PAYMENT", paymentPayloadBase64)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "success")
+	assert.Equal(t, http.StatusPaymentRequired, w.Code)
+	assert.Contains(t, w.Body.String(), "failed to settle payment: 500 Internal Server Error")
 
 	assert.Empty(t, w.Header().Get("X-PAYMENT-RESPONSE"))
 }
