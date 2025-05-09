@@ -2,6 +2,7 @@ package coinbasefacilitator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/coinbase/cdp-sdk/go/auth"
 )
@@ -17,13 +18,8 @@ import (
 // Returns:
 //   - The authorization header string and any error that occurred
 func CreateAuthHeader(apiKeyId, apiKeySecret, requestHost, requestPath string) (string, error) {
-	// Debug print all parameters
-	fmt.Printf("\n=== JWT Debug Info ===\n")
-	fmt.Printf("KeyID: %s\n", apiKeyId)
-	fmt.Printf("KeySecret length: %d\n", len(apiKeySecret))
-	fmt.Printf("RequestHost: %s\n", requestHost)
-	fmt.Printf("RequestPath: %s\n", requestPath)
-	fmt.Printf("RequestMethod: POST\n")
+	// Remove https:// if present
+	requestHost = strings.TrimPrefix(requestHost, "https://")
 
 	jwt, err := auth.GenerateJWT(auth.JwtOptions{
 		KeyID:         apiKeyId,
@@ -37,9 +33,7 @@ func CreateAuthHeader(apiKeyId, apiKeySecret, requestHost, requestPath string) (
 		return "", err
 	}
 
-	bearerToken := "Bearer " + jwt
-	fmt.Printf("Generated Bearer Token: %s\n", bearerToken)
-	fmt.Printf("=== End JWT Debug Info ===\n\n")
+	bearerToken := fmt.Sprintf("Bearer %s", jwt)
 
 	return bearerToken, nil
 }

@@ -37,6 +37,7 @@ func NewFacilitatorClient(config *types.FacilitatorConfig) *FacilitatorClient {
 // Verify sends a payment verification request to the facilitator
 func (c *FacilitatorClient) Verify(payload *types.PaymentPayload, requirements *types.PaymentRequirements) (*types.VerifyResponse, error) {
 	reqBody := map[string]any{
+		"x402Version":         1,
 		"paymentPayload":      payload,
 		"paymentRequirements": requirements,
 	}
@@ -60,6 +61,7 @@ func (c *FacilitatorClient) Verify(payload *types.PaymentPayload, requirements *
 		}
 		if verifyHeaders, ok := headers["verify"]; ok {
 			for key, value := range verifyHeaders {
+				fmt.Printf("Setting header: %s: %s\n", key, value)
 				req.Header.Set(key, value)
 			}
 		}
@@ -86,6 +88,7 @@ func (c *FacilitatorClient) Verify(payload *types.PaymentPayload, requirements *
 // Settle sends a payment settlement request to the facilitator
 func (c *FacilitatorClient) Settle(payload *types.PaymentPayload, requirements *types.PaymentRequirements) (*types.SettleResponse, error) {
 	reqBody := map[string]any{
+		"x402Version":         1,
 		"paymentPayload":      payload,
 		"paymentRequirements": requirements,
 	}
