@@ -153,6 +153,7 @@ func PaymentMiddleware(amount *big.Float, address string, opts ...Options) gin.H
 				"error":       err.Error(),
 				"x402Version": x402Version,
 			})
+			return
 		}
 
 		payment := c.GetHeader("X-PAYMENT")
@@ -199,12 +200,29 @@ func PaymentMiddleware(amount *big.Float, address string, opts ...Options) gin.H
 		}
 
 		fmt.Println("Payment verified, proceeding")
+
+		// Create a custom response writer to intercept the response
+		writer := &responseWriter{
+			ResponseWriter: c.Writer,
+			body:           &strings.Builder{},
+			statusCode:     http.StatusOK,
+		}
+		c.Writer = writer
+
+		// Execute the handler
 		c.Next()
+
+		// Check if the handler was aborted
+		if c.IsAborted() {
+			return
+		}
 
 		// Settle payment
 		settleResponse, err := facilitatorClient.Settle(paymentPayload, paymentRequirements)
 		if err != nil {
 			fmt.Println("Settlement failed:", err)
+			// Reset the response writer
+			c.Writer = writer.ResponseWriter
 			c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{
 				"error":       err.Error(),
 				"accepts":     []*types.PaymentRequirements{paymentRequirements},
@@ -216,14 +234,52 @@ func PaymentMiddleware(amount *big.Float, address string, opts ...Options) gin.H
 		settleResponseHeader, err := settleResponse.EncodeToBase64String()
 		if err != nil {
 			fmt.Println("Settle Header Encoding failed:", err)
+			// Reset the response writer
+			c.Writer = writer.ResponseWriter
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error":       err.Error(),
 				"x402Version": x402Version,
 			})
+			return
 		}
 
+		// Write the original response with the settlement header
 		c.Header("X-PAYMENT-RESPONSE", settleResponseHeader)
+		// Reset the response writer to the original
+		c.Writer = writer.ResponseWriter
+		c.Writer.WriteHeader(writer.statusCode)
+		c.Writer.Write([]byte(writer.body.String()))
 	}
+}
+
+// responseWriter is a custom response writer that captures the response
+type responseWriter struct {
+	gin.ResponseWriter
+	body       *strings.Builder
+	statusCode int
+	written    bool
+}
+
+func (w *responseWriter) WriteHeader(code int) {
+	if !w.written {
+		w.statusCode = code
+		w.written = true
+	}
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	if !w.written {
+		w.WriteHeader(http.StatusOK)
+	}
+	w.body.Write(b)
+	return len(b), nil
+}
+
+func (w *responseWriter) WriteString(s string) (int, error) {
+	if !w.written {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.body.WriteString(s)
 }
 
 // getPaywallHtml is the default paywall HTML for the PaymentMiddleware.

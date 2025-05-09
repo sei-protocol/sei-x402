@@ -42,9 +42,11 @@ func CreateCdpAuthHeaders(apiKeyID, apiKeySecret string) func() (map[string]map[
 			return nil, fmt.Errorf("failed to create settle auth header: %w", err)
 		}
 
+		correlationHeader := CreateCorrelationHeader()
+
 		return map[string]map[string]string{
-			"verify": {"Authorization": verifyToken},
-			"settle": {"Authorization": settleToken},
+			"verify": {"Authorization": verifyToken, "Correlation-Context": correlationHeader},
+			"settle": {"Authorization": settleToken, "Correlation-Context": correlationHeader},
 		}, nil
 	}
 }

@@ -61,7 +61,6 @@ func (c *FacilitatorClient) Verify(payload *types.PaymentPayload, requirements *
 		}
 		if verifyHeaders, ok := headers["verify"]; ok {
 			for key, value := range verifyHeaders {
-				fmt.Printf("Setting header: %s: %s\n", key, value)
 				req.Header.Set(key, value)
 			}
 		}

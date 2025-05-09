@@ -2,10 +2,15 @@ package coinbasefacilitator
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/coinbase/cdp-sdk/go/auth"
+	"github.com/coinbase/x402/go/pkg/types"
 )
+
+// SDKVersion represents the current version of the SDK
+const SDKVersion = "0.0.0"
 
 // CreateAuthHeader creates an authorization header for a request to the Coinbase API.
 //
@@ -36,4 +41,24 @@ func CreateAuthHeader(apiKeyId, apiKeySecret, requestHost, requestPath string) (
 	bearerToken := fmt.Sprintf("Bearer %s", jwt)
 
 	return bearerToken, nil
+}
+
+// CreateCorrelationHeader creates a correlation header for a request to the Coinbase API.
+//
+// Returns:
+//   - The correlation header string
+func CreateCorrelationHeader() string {
+	data := map[string]string{
+		"sdk_version":    SDKVersion,
+		"sdk_language":   "go",
+		"source":         "x402",
+		"source_version": types.Version,
+	}
+
+	var pairs []string
+	for key, value := range data {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", key, url.QueryEscape(value)))
+	}
+
+	return strings.Join(pairs, ",")
 }
