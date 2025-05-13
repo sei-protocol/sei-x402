@@ -16,6 +16,7 @@ import {
   PaymentRequirements,
   Resource,
   RoutesConfig,
+  settleResponseHeader,
 } from "x402/types";
 import { useFacilitator } from "x402/verify";
 
@@ -189,22 +190,15 @@ export function paymentMiddleware(
       );
     }
 
-    // Proceed with request
-    await next();
-
-    // Settle payment after response
+    // Settle payment before processing the request, as Hono middleware does not allow us to set headers after the response has been sent
     try {
-      const settlement = await settle(decodedPayment, paymentRequirements[0]);
+      const settlement = await settle(decodedPayment, selectedPaymentRequirements);
 
       if (settlement.success) {
-        c.header(
-          "X-PAYMENT-RESPONSE",
-          JSON.stringify({
-            success: true,
-            transaction: settlement.transaction,
-            network: settlement.network,
-          }),
-        );
+        const responseHeader = settleResponseHeader(settlement);
+        c.header("X-PAYMENT-RESPONSE", responseHeader);
+      } else {
+        throw new Error(settlement.errorReason);
       }
     } catch (error) {
       return c.json(
@@ -216,6 +210,9 @@ export function paymentMiddleware(
         402,
       );
     }
+
+    // Proceed with request
+    await next();
   };
 }
 
