@@ -190,18 +190,23 @@ export function paymentMiddleware(
       );
     }
 
+    // Proceed with request
+    await next();
+
+    let res = c.res;
+    c.res = undefined;
+
     // Settle payment before processing the request, as Hono middleware does not allow us to set headers after the response has been sent
     try {
       const settlement = await settle(decodedPayment, selectedPaymentRequirements);
-
       if (settlement.success) {
         const responseHeader = settleResponseHeader(settlement);
-        c.header("X-PAYMENT-RESPONSE", responseHeader);
+        res.headers.set("X-PAYMENT-RESPONSE", responseHeader);
       } else {
         throw new Error(settlement.errorReason);
       }
     } catch (error) {
-      return c.json(
+      res = c.json(
         {
           error: error instanceof Error ? error : new Error("Failed to settle payment"),
           accepts: paymentRequirements,
@@ -211,8 +216,7 @@ export function paymentMiddleware(
       );
     }
 
-    // Proceed with request
-    await next();
+    c.res = res;
   };
 }
 
