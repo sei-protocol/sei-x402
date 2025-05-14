@@ -235,18 +235,11 @@ describe("paymentMiddleware()", () => {
     });
 
     (mockVerify as ReturnType<typeof vi.fn>).mockResolvedValue({ isValid: true });
-    (mockSettle as ReturnType<typeof vi.fn>).mockResolvedValue({
-      success: true,
-      transaction: "0x123",
-      network: "base-sepolia",
-    });
 
     await middleware(mockContext, mockNext);
 
     expect(exact.evm.decodePayment).toHaveBeenCalledWith(encodedValidPayment);
     expect(mockVerify).toHaveBeenCalledWith(validPayment, expect.any(Object));
-    expect(mockSettle).toHaveBeenCalledWith(validPayment, expect.any(Object));
-    expect(mockContext.header).toHaveBeenCalledWith("X-PAYMENT-RESPONSE", expect.any(String));
     expect(mockNext).toHaveBeenCalled();
   });
 
@@ -295,7 +288,7 @@ describe("paymentMiddleware()", () => {
     );
   });
 
-  it("should handle settlement before allowing the request to proceed", async () => {
+  it("should handle settlement after response", async () => {
     (mockContext.req.header as ReturnType<typeof vi.fn>).mockImplementation((name: string) => {
       if (name === "X-PAYMENT") return encodedValidPayment;
       return undefined;
@@ -308,15 +301,28 @@ describe("paymentMiddleware()", () => {
       network: "base-sepolia",
     });
 
+    // Mock the json method to simulate response already sent
+    const originalJson = mockContext.json;
+    mockContext.json = vi.fn().mockImplementation(() => {
+      throw new Error("Response already sent");
+    });
+
+    // Spy on the Headers.set method
+    const headersSpy = vi.spyOn(mockContext.res.headers, "set");
+
     await middleware(mockContext, mockNext);
 
     expect(exact.evm.decodePayment).toHaveBeenCalledWith(encodedValidPayment);
     expect(mockSettle).toHaveBeenCalledWith(validPayment, expect.any(Object));
-    expect(mockContext.header).toHaveBeenCalledWith("X-PAYMENT-RESPONSE", expect.any(String));
-    expect(mockNext).toHaveBeenCalled();
+    expect(headersSpy).toHaveBeenCalledWith("X-PAYMENT-RESPONSE", expect.any(String));
+
+    // Restore original json method
+    mockContext.json = originalJson;
+    // Restore the spy
+    headersSpy.mockRestore();
   });
 
-  it("should return 402 if settlement fails before the request proceeds", async () => {
+  it("should handle settlement failure before response is sent", async () => {
     (mockContext.req.header as ReturnType<typeof vi.fn>).mockImplementation((name: string) => {
       if (name === "X-PAYMENT") return encodedValidPayment;
       return undefined;
@@ -352,6 +358,5 @@ describe("paymentMiddleware()", () => {
       },
       402,
     );
-    expect(mockNext).not.toHaveBeenCalled();
   });
 });
