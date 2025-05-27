@@ -193,9 +193,19 @@ export function paymentMiddleware(
         return;
       }
     } catch (error) {
+      let errorMessage = "Verification failed";
+
+      if (error) {
+        if (typeof error === "string" && error.trim() !== "") {
+          errorMessage = error;
+        } else if (typeof error === "object" && Object.keys(error).length > 0) {
+          errorMessage = JSON.stringify(error);
+        }
+      }
+
       res.status(402).json({
         x402Version,
-        error,
+        error: errorMessage,
         accepts: toJsonSafe(paymentRequirements),
       });
       return;
@@ -224,11 +234,21 @@ export function paymentMiddleware(
       const responseHeader = settleResponseHeader(settleResponse);
       res.setHeader("X-PAYMENT-RESPONSE", responseHeader);
     } catch (error) {
+      let errorMessage = "Settlement failed";
+
+      if (error) {
+        if (typeof error === "string" && error.trim() !== "") {
+          errorMessage = error;
+        } else if (typeof error === "object" && Object.keys(error).length > 0) {
+          errorMessage = JSON.stringify(error);
+        }
+      }
+
       // If settlement fails and the response hasn't been sent yet, return an error
       if (!res.headersSent) {
         res.status(402).json({
           x402Version,
-          error,
+          error: errorMessage,
           accepts: toJsonSafe(paymentRequirements),
         });
         return;

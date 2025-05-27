@@ -179,14 +179,35 @@ export function paymentMiddleware(
       );
     }
 
-    const verification = await verify(decodedPayment, selectedPaymentRequirements);
+    try {
+      const verification = await verify(decodedPayment, selectedPaymentRequirements);
 
-    if (!verification.isValid) {
+      if (!verification.isValid) {
+        return c.json(
+          {
+            error: new Error(verification.invalidReason),
+            accepts: paymentRequirements,
+            payer: verification.payer,
+            x402Version,
+          },
+          402,
+        );
+      }
+    } catch (error) {
+      let errorMessage = "Verification failed";
+
+      if (error) {
+        if (typeof error === "string" && error.trim() !== "") {
+          errorMessage = error;
+        } else if (typeof error === "object" && Object.keys(error).length > 0) {
+          errorMessage = JSON.stringify(error);
+        }
+      }
+
       return c.json(
         {
-          error: new Error(verification.invalidReason),
+          error: errorMessage,
           accepts: paymentRequirements,
-          payer: verification.payer,
           x402Version,
         },
         402,
@@ -209,9 +230,21 @@ export function paymentMiddleware(
         throw new Error(settlement.errorReason);
       }
     } catch (error) {
+      let errorMessage = "Settlement failed";
+
+      if (error) {
+        if (typeof error === "string" && error.trim() !== "") {
+          errorMessage = error;
+        } else if (typeof error === "object" && Object.keys(error).length > 0) {
+          errorMessage = JSON.stringify(error);
+        } else if (error instanceof Error && error.message) {
+          errorMessage = error.message;
+        }
+      }
+
       res = c.json(
         {
-          error: error instanceof Error ? error : new Error("Failed to settle payment"),
+          error: error instanceof Error ? error : new Error(errorMessage),
           accepts: paymentRequirements,
           x402Version,
         },

@@ -203,15 +203,38 @@ export function paymentMiddleware(
       );
     }
 
-    const verification = await verify(decodedPayment, selectedPaymentRequirements);
+    try {
+      const verification = await verify(decodedPayment, selectedPaymentRequirements);
 
-    if (!verification.isValid) {
+      if (!verification.isValid) {
+        return new NextResponse(
+          JSON.stringify({
+            x402Version,
+            error: verification.invalidReason,
+            accepts: paymentRequirements,
+            payer: verification.payer,
+          }),
+          { status: 402, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    } catch (error) {
+      let errorMessage = "Verification failed";
+
+      if (error) {
+        if (typeof error === "string" && error.trim() !== "") {
+          errorMessage = error;
+        } else if (typeof error === "object" && Object.keys(error).length > 0) {
+          errorMessage = JSON.stringify(error);
+        } else if (error instanceof Error && error.message) {
+          errorMessage = error.message;
+        }
+      }
+
       return new NextResponse(
         JSON.stringify({
           x402Version,
-          error: verification.invalidReason,
+          error: errorMessage,
           accepts: paymentRequirements,
-          payer: verification.payer,
         }),
         { status: 402, headers: { "Content-Type": "application/json" } },
       );
@@ -236,10 +259,22 @@ export function paymentMiddleware(
         );
       }
     } catch (error) {
+      let errorMessage = "Settlement failed";
+
+      if (error) {
+        if (typeof error === "string" && error.trim() !== "") {
+          errorMessage = error;
+        } else if (typeof error === "object" && Object.keys(error).length > 0) {
+          errorMessage = JSON.stringify(error);
+        } else if (error instanceof Error && error.message) {
+          errorMessage = error.message;
+        }
+      }
+
       return new NextResponse(
         JSON.stringify({
           x402Version,
-          error: error instanceof Error ? error : "Settlement failed",
+          error: errorMessage,
           accepts: paymentRequirements,
         }),
         { status: 402, headers: { "Content-Type": "application/json" } },

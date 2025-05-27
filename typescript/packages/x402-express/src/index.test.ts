@@ -304,7 +304,7 @@ describe("paymentMiddleware()", () => {
     expect(mockRes.status).toHaveBeenCalledWith(402);
     expect(mockRes.json).toHaveBeenCalledWith({
       x402Version: 1,
-      error: new Error("Settlement failed"),
+      error: "Settlement failed",
       accepts: [
         {
           scheme: "exact",
