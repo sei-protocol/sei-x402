@@ -6893,6 +6893,9 @@ packages:
   x402@0.3.3:
     resolution: {integrity: sha512-77Bc6xi8bo0V4Sw3FU+oW8kNcPRROd6B+MKaSKrGacoA8BtYGI6oTdPOxG0eZiGGXe2Vh9VsTCVtpjbTigMMGg==}
 
+  x402@file:../../typescript/packages/x402:
+    resolution: {directory: ../../typescript/packages/x402, type: directory}
+
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
@@ -9629,14 +9632,6 @@ snapshots:
       magic-string: 0.30.17
     optionalDependencies:
       vite: 6.3.2(@types/node@22.14.1)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
-
-  '@vitest/mocker@3.1.1(vite@6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1))':
-    dependencies:
-      '@vitest/spy': 3.1.1
-      estree-walker: 3.0.3
-      magic-string: 0.30.17
-    optionalDependencies:
-      vite: 6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
 
   '@vitest/pretty-format@3.1.1':
     dependencies:
@@ -13916,27 +13911,6 @@ snapshots:
       - tsx
       - yaml
 
-  vite-node@3.1.1(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1):
-    dependencies:
-      cac: 6.7.14
-      debug: 4.4.0
-      es-module-lexer: 1.6.0
-      pathe: 2.0.3
-      vite: 6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
-    transitivePeerDependencies:
-      - '@types/node'
-      - jiti
-      - less
-      - lightningcss
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - yaml
-
   vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.2(@types/node@22.14.1)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)):
     dependencies:
       debug: 4.4.0
@@ -13944,17 +13918,6 @@ snapshots:
       tsconfck: 3.1.5(typescript@5.8.3)
     optionalDependencies:
       vite: 6.3.2(@types/node@22.14.1)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
-
-  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)):
-    dependencies:
-      debug: 4.4.0
-      globrex: 0.1.2
-      tsconfck: 3.1.5(typescript@5.8.3)
-    optionalDependencies:
-      vite: 6.3.2(@types/node@22.15.3)(jiti@1.21.7)(tsx@4.19.3)(yaml@2.7.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -14228,6 +14191,15 @@ snapshots:
       - bufferutil
       - debug
       - encoding
+      - typescript
+      - utf-8-validate
+
+  x402@file:../../typescript/packages/x402(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10):
+    dependencies:
+      viem: 2.28.3(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.3)
+      zod: 3.24.3
+    transitivePeerDependencies:
+      - bufferutil
       - typescript
       - utf-8-validate
 
