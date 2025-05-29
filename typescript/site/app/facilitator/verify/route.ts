@@ -3,6 +3,7 @@ import {
   PaymentPayloadSchema,
   PaymentRequirements,
   PaymentRequirementsSchema,
+  SettleResponse,
   evm,
 } from "x402/types";
 import { verify } from "x402/facilitator";
@@ -23,8 +24,29 @@ const client = evm.createClientSepolia();
 export async function POST(req: Request) {
   const body: VerifyRequest = await req.json();
 
-  const paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
-  const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
+  let paymentPayload: PaymentPayload;
+  try {
+    paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
+  } catch (error) {
+    return Response.json({
+      success: false,
+      errorReason: "invalid_payload",
+      transaction: "",
+      network: paymentPayload.network,
+    } as SettleResponse, { status: 400 });
+  }
+
+  let paymentRequirements: PaymentRequirements;
+  try {
+    paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
+  } catch (error) {
+    return Response.json({
+      success: false,
+      errorReason: "invalid_payment_requirements",
+      transaction: "",
+      network: paymentPayload.network,
+    } as SettleResponse, { status: 400 });
+  }
 
   const valid = await verify(client, paymentPayload, paymentRequirements);
 

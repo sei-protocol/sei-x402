@@ -5,6 +5,7 @@ import {
   PaymentPayloadSchema,
   PaymentRequirements,
   PaymentRequirementsSchema,
+  SettleResponse,
   evm,
 } from "x402/types";
 
@@ -24,11 +25,31 @@ export async function POST(req: Request) {
 
   const body: SettleRequest = await req.json();
 
-  const paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
-  const paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
+  let paymentPayload: PaymentPayload
+  try {
+    paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
+  } catch (error) {
+    return Response.json({
+      success: false,
+      errorReason: "invalid_payload",
+      transaction: "",
+      network: paymentPayload.network,
+    } as SettleResponse, { status: 400 });
+  }
+
+  let paymentRequirements: PaymentRequirements;
+  try {
+    paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
+  } catch (error) {
+    return Response.json({
+      success: false,
+      errorReason: "invalid_payment_requirements",
+      transaction: "",
+      network: paymentPayload.network,
+    } as SettleResponse, { status: 400 });
+  }
 
   const response = await settle(wallet, paymentPayload, paymentRequirements);
-
   return Response.json(response);
 }
 
