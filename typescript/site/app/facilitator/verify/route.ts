@@ -3,7 +3,7 @@ import {
   PaymentPayloadSchema,
   PaymentRequirements,
   PaymentRequirementsSchema,
-  SettleResponse,
+  VerifyResponse,
   evm,
 } from "x402/types";
 import { verify } from "x402/facilitator";
@@ -31,11 +31,10 @@ export async function POST(req: Request) {
     console.error("Invalid payment payload:", error);
     return Response.json(
       {
-        success: false,
-        errorReason: "invalid_payload",
-        transaction: "",
-        network: body.paymentPayload?.network || "",
-      } as SettleResponse,
+        isValid: false,
+        invalidReason: "invalid_payload",
+        payer: body.paymentPayload?.payload?.authorization?.from ?? "",
+      } as VerifyResponse,
       { status: 400 },
     );
   }
@@ -47,11 +46,10 @@ export async function POST(req: Request) {
     console.error("Invalid payment requirements:", error);
     return Response.json(
       {
-        success: false,
-        errorReason: "invalid_payment_requirements",
-        transaction: "",
-        network: paymentPayload.network,
-      } as SettleResponse,
+        isValid: false,
+        invalidReason: "invalid_payment_requirements",
+        payer: paymentPayload.payload.authorization.from,
+      } as VerifyResponse,
       { status: 400 },
     );
   }
