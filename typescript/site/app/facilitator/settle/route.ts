@@ -57,8 +57,21 @@ export async function POST(req: Request) {
     );
   }
 
-  const response = await settle(wallet, paymentPayload, paymentRequirements);
-  return Response.json(response);
+  try {
+    const response = await settle(wallet, paymentPayload, paymentRequirements);
+    return Response.json(response);
+  } catch (error) {
+    console.error("Error settling payment:", error);
+    return Response.json(
+      {
+        success: false,
+        errorReason: "unexpected_settle_error",
+        transaction: "",
+        network: paymentPayload.network,
+      } as SettleResponse,
+      { status: 500 },
+    );
+  }
 }
 
 /**

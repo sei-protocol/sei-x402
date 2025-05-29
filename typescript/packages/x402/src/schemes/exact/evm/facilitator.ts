@@ -58,7 +58,7 @@ export async function verify<
   if (payload.scheme !== SCHEME || paymentRequirements.scheme !== SCHEME) {
     return {
       isValid: false,
-      invalidReason: `invalid_scheme`,
+      invalidReason: `unsupported_scheme`,
       payer: payload.payload.authorization.from,
     };
   }
@@ -115,7 +115,7 @@ export async function verify<
   if (getAddress(payload.payload.authorization.to) !== getAddress(paymentRequirements.payTo)) {
     return {
       isValid: false,
-      invalidReason: "invalid_exact_evm_payload_signature_address",
+      invalidReason: "invalid_exact_evm_payload_recipient_mismatch",
       payer: payload.payload.authorization.from,
     };
   }

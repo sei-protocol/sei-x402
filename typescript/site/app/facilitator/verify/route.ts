@@ -54,9 +54,20 @@ export async function POST(req: Request) {
     );
   }
 
-  const valid = await verify(client, paymentPayload, paymentRequirements);
-
-  return Response.json(valid);
+  try {
+    const valid = await verify(client, paymentPayload, paymentRequirements);
+    return Response.json(valid);
+  } catch (error) {
+    console.error("Error verifying payment:", error);
+    return Response.json(
+      {
+        isValid: false,
+        invalidReason: "unexpected_verify_error",
+        payer: paymentPayload.payload.authorization.from,
+      } as VerifyResponse,
+      { status: 500 },
+    );
+  }
 }
 
 /**
