@@ -28,24 +28,32 @@ export async function POST(req: Request) {
   try {
     paymentPayload = PaymentPayloadSchema.parse(body.paymentPayload);
   } catch (error) {
-    return Response.json({
-      success: false,
-      errorReason: "invalid_payload",
-      transaction: "",
-      network: paymentPayload.network,
-    } as SettleResponse, { status: 400 });
+    console.error("Invalid payment payload:", error);
+    return Response.json(
+      {
+        success: false,
+        errorReason: "invalid_payload",
+        transaction: "",
+        network: body.paymentPayload?.network || "",
+      } as SettleResponse,
+      { status: 400 },
+    );
   }
 
   let paymentRequirements: PaymentRequirements;
   try {
     paymentRequirements = PaymentRequirementsSchema.parse(body.paymentRequirements);
   } catch (error) {
-    return Response.json({
-      success: false,
-      errorReason: "invalid_payment_requirements",
-      transaction: "",
-      network: paymentPayload.network,
-    } as SettleResponse, { status: 400 });
+    console.error("Invalid payment requirements:", error);
+    return Response.json(
+      {
+        success: false,
+        errorReason: "invalid_payment_requirements",
+        transaction: "",
+        network: paymentPayload.network,
+      } as SettleResponse,
+      { status: 400 },
+    );
   }
 
   const valid = await verify(client, paymentPayload, paymentRequirements);
