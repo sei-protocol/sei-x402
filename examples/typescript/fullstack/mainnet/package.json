@@ -1,5 +1,5 @@
 {
-  "name": "next-example",
+  "name": "next-mainnet-example",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,11 +14,12 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "next": "^15.2.4",
+    "next": "canary",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "viem": "^2.26.2",
-    "x402-next": "workspace:*"
+    "x402-next": "workspace:*",
+    "@coinbase/x402": "workspace:*"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
