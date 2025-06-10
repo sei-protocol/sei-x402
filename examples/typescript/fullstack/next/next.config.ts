@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
+  experimental: {
+    nodeMiddleware: true,
+  },
 };
 
 export default nextConfig;

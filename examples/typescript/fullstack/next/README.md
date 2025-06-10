@@ -125,3 +125,44 @@ export const config = {
   matcher: ["/protected/:path*", "/api/premium/:path*"],
 };
 ```
+
+## Accessing Mainnet
+
+To access the mainnet facilitator in NextJs, a temporary workaround is needed. The `@coinbase/x402` package currently only supports Node.js runtimes and is incompatible with the Edge runtime. Coinbase is actively working on Edge runtime compatibility.
+
+As a **temporary solution** until official support is available, you can enable the Node.js runtime for middleware:
+
+1. Enable Node middleware as an experimental feature:
+
+```ts
+// next.config.ts
+const nextConfig: NextConfig = {
+  // rest of your next config setup
+  experimental: {
+    nodeMiddleware: true,
+  }
+};
+```
+
+2. Specify the Node.js runtime in your middleware:
+
+```ts
+// middleware.ts
+export const config = {
+  // rest of your config setup
+  runtime: 'nodejs',
+};
+```
+
+3. Use the `canary` version of Next.js to access experimental features:
+
+```json
+// package.json
+{
+  "dependencies": {
+    "next": "canary",
+  }
+}
+```
+
+**Note:** This approach is only needed temporarily while awaiting official Edge runtime support in the x402 package.
