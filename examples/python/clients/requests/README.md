@@ -7,7 +7,7 @@ This example demonstrates how to use the x402 package with requests to make requ
 1. Install dependencies and run the example:
 ```bash
 uv sync
-uv run python example.py
+uv run python index.py
 ```
 
 ## How it Works
