@@ -1,15 +1,10 @@
 import time
-import logging
-from typing import Optional, List, Callable, Dict, Any
+from typing import Optional, Callable, Dict, Any
 from web3 import Web3
-from x402.chains import get_chain_id, get_token_name, get_token_version
-from x402.exact import prepare_payment_header, sign_payment_header, encode_payment
+from x402.exact import sign_payment_header
 from x402.types import (
     PaymentRequirements,
     UnsupportedSchemeException,
-    x402PaymentRequiredResponse,
-    ExactPaymentPayload,
-    EIP3009Authorization,
 )
 import secrets
 from x402.encoding import safe_base64_decode
@@ -79,21 +74,39 @@ class x402Client:
         if payment_requirements_selector:
             self.select_payment_requirements = payment_requirements_selector
 
-    def select_payment_requirements(self, accepts: list) -> PaymentRequirements:
+    def select_payment_requirements(
+        self,
+        accepts: list,
+        network_filter: Optional[str] = None,
+        scheme_filter: Optional[str] = None,
+    ) -> PaymentRequirements:
         """Select payment requirements from the list of accepted requirements.
 
         Args:
             accepts: List of accepted payment requirements
+            network_filter: Optional network to filter by
+            scheme_filter: Optional scheme to filter by
 
         Returns:
             Selected payment requirements
 
         Raises:
             UnsupportedSchemeException: If no supported scheme is found
+            PaymentAmountExceededError: If payment amount exceeds max_value
         """
         for req in accepts:
             # If it's a dict, use key access; if it's a model, use attribute
             scheme = req["scheme"] if isinstance(req, dict) else req.scheme
+            network = req["network"] if isinstance(req, dict) else req.network
+
+            # Check scheme filter
+            if scheme_filter and scheme != scheme_filter:
+                continue
+
+            # Check network filter
+            if network_filter and network != network_filter:
+                continue
+
             if scheme == "exact":
                 # If it's already a PaymentRequirements, return it; else, construct it
                 result = (
@@ -101,7 +114,17 @@ class x402Client:
                     if isinstance(req, PaymentRequirements)
                     else PaymentRequirements(**req)
                 )
+
+                # Check max value if set
+                if self.max_value is not None:
+                    max_amount = int(result.max_amount_required)
+                    if max_amount > self.max_value:
+                        raise PaymentAmountExceededError(
+                            f"Payment amount {max_amount} exceeds maximum allowed value {self.max_value}"
+                        )
+
                 return result
+
         raise UnsupportedSchemeException("No supported payment scheme found")
 
     def create_payment_header(

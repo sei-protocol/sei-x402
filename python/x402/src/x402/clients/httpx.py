@@ -1,17 +1,13 @@
-from typing import Optional, Callable, Any
-import logging
-import json
+from typing import Optional, Callable
 from httpx import Request, Response, AsyncClient
 from web3 import Web3
 from x402.clients.base import (
     x402Client,
     MissingRequestConfigError,
-    PaymentAlreadyAttemptedError,
     PaymentError,
     decode_x_payment_response,
 )
 from x402.types import x402PaymentRequiredResponse
-from x402.encoding import safe_base64_encode
 
 
 class HttpxHooks:
@@ -71,18 +67,10 @@ class HttpxHooks:
             async with AsyncClient() as client:
                 retry_response = await client.send(request)
 
-                # Store the payment response header for access
-                if "X-Payment-Response" in retry_response.headers:
-                    payment_response = retry_response.headers["X-Payment-Response"]
-                    retry_response._payment_response = decode_x_payment_response(
-                        payment_response
-                    )
-
                 # Copy the retry response data to the original response
                 response.status_code = retry_response.status_code
                 response.headers = retry_response.headers
                 response._content = retry_response._content
-                response._payment_response = retry_response._payment_response
                 return response
 
         except PaymentError as e:

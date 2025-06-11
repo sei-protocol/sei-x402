@@ -1,0 +1,210 @@
+import pytest
+import json
+import base64
+from unittest.mock import AsyncMock, MagicMock, patch
+from httpx import Request, Response
+from web3 import Web3
+from x402.clients.httpx import HttpxHooks, with_payment_interceptor
+from x402.clients.base import (
+    PaymentError,
+    MissingRequestConfigError,
+    PaymentAmountExceededError,
+)
+from x402.types import PaymentRequirements, x402PaymentRequiredResponse
+
+
+@pytest.fixture
+def web3():
+    w3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
+    account = w3.eth.account.create()
+    w3.eth.default_account = account
+    return w3, account
+
+
+@pytest.fixture
+def payment_requirements():
+    return PaymentRequirements(
+        scheme="exact",
+        network="base-sepolia",
+        asset="0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        pay_to="0x0000000000000000000000000000000000000000",
+        max_amount_required="10000",
+        resource="https://example.com",
+        description="test",
+        max_timeout_seconds=1000,
+        mime_type="text/plain",
+        output_schema=None,
+        extra={
+            "name": "USD Coin",
+            "version": "2",
+        },
+    )
+
+
+@pytest.fixture
+def hooks(web3):
+    w3, _ = web3
+    return with_payment_interceptor(w3)
+
+
+@pytest.mark.asyncio
+async def test_on_response_success(hooks):
+    # Test successful response (200)
+    response = Response(200)
+    result = await hooks.on_response(response)
+    assert result == response
+
+
+@pytest.mark.asyncio
+async def test_on_response_non_402(hooks):
+    # Test non-402 response
+    response = Response(404)
+    result = await hooks.on_response(response)
+    assert result == response
+
+
+@pytest.mark.asyncio
+async def test_on_response_retry(hooks):
+    # Test retry response
+    response = Response(402)
+    hooks._is_retry = True
+    result = await hooks.on_response(response)
+    assert result == response
+
+
+@pytest.mark.asyncio
+async def test_on_response_missing_request(hooks):
+    # Test missing request configuration
+    response = Response(402)
+    # Don't set response.request at all to simulate missing request
+    with pytest.raises(
+        PaymentError,
+        match="Failed to handle payment: The request instance has not been set on this response.",
+    ):
+        await hooks.on_response(response)
+
+
+@pytest.mark.asyncio
+async def test_on_response_payment_flow(hooks, payment_requirements):
+    # Mock the payment required response
+    payment_response = x402PaymentRequiredResponse(
+        x402_version=1,
+        accepts=[payment_requirements],
+        error="Payment Required",  # Add required error field
+    )
+
+    # Create initial 402 response
+    response = Response(402)
+    response.request = Request("GET", "https://example.com")
+    response._content = json.dumps(payment_response.model_dump()).encode()
+
+    # Mock the retry response with payment response header
+    payment_result = {
+        "success": True,
+        "transaction": "0x1234",
+        "network": "base-sepolia",
+        "payer": "0x5678",
+    }
+    retry_response = Response(200)
+    retry_response.headers = {
+        "X-Payment-Response": base64.b64encode(
+            json.dumps(payment_result).encode()
+        ).decode()
+    }
+
+    # Mock the AsyncClient
+    mock_client = AsyncMock()
+    mock_client.send.return_value = retry_response
+    mock_client.__aenter__.return_value = mock_client
+
+    # Mock both required methods
+    hooks.client.select_payment_requirements = MagicMock(
+        return_value=payment_requirements
+    )
+    mock_header = "mock_payment_header"
+    hooks.client.create_payment_header = MagicMock(return_value=mock_header)
+
+    with patch("x402.clients.httpx.AsyncClient", return_value=mock_client):
+        result = await hooks.on_response(response)
+
+        # Verify the result
+        assert result.status_code == 200
+
+        # Verify the retry request was made
+        assert mock_client.send.called
+        retry_request = mock_client.send.call_args[0][0]
+        assert retry_request.headers["X-Payment"] == mock_header
+        assert (
+            retry_request.headers["Access-Control-Expose-Headers"]
+            == "X-Payment-Response"
+        )
+
+        # Verify the mocked methods were called with correct arguments
+        hooks.client.select_payment_requirements.assert_called_once_with(
+            [payment_requirements]
+        )
+        hooks.client.create_payment_header.assert_called_once_with(
+            1, payment_requirements
+        )
+
+
+@pytest.mark.asyncio
+async def test_on_response_payment_error(hooks, payment_requirements):
+    # Mock the payment required response with unsupported scheme
+    payment_requirements.scheme = "unsupported"
+    payment_response = x402PaymentRequiredResponse(
+        x402_version=1,
+        accepts=[payment_requirements],
+        error="Payment Required",  # Add required error field
+    )
+
+    # Create initial 402 response
+    response = Response(402)
+    response.request = Request("GET", "https://example.com")
+    response._content = json.dumps(payment_response.model_dump()).encode()
+
+    # Test payment error handling
+    with pytest.raises(PaymentError):
+        await hooks.on_response(response)
+
+    # Verify retry flag is reset
+    assert not hooks._is_retry
+
+
+@pytest.mark.asyncio
+async def test_on_response_general_error(hooks):
+    # Create initial 402 response with invalid JSON
+    response = Response(402)
+    response.request = Request("GET", "https://example.com")
+    response._content = b"invalid json"
+
+    # Test general error handling
+    with pytest.raises(PaymentError):
+        await hooks.on_response(response)
+
+    # Verify retry flag is reset
+    assert not hooks._is_retry
+
+
+def test_with_payment_interceptor(web3):
+    w3, _ = web3
+
+    # Test basic interceptor creation
+    hooks = with_payment_interceptor(w3)
+    assert isinstance(hooks, HttpxHooks)
+    assert hooks.client.web3 == w3
+    assert hooks.client.max_value is None
+
+    # Test interceptor with max_value
+    hooks = with_payment_interceptor(w3, max_value=1000)
+    assert hooks.client.max_value == 1000
+
+    # Test interceptor with custom selector
+    def custom_selector(accepts, network_filter=None, scheme_filter=None):
+        return accepts[0]
+
+    hooks = with_payment_interceptor(w3, payment_requirements_selector=custom_selector)
+    assert (
+        hooks.client.select_payment_requirements
+        != hooks.client.__class__.select_payment_requirements
+    )

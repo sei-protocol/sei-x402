@@ -24,10 +24,25 @@ def prepare_payment_header(
     sender_address: str, x402_version: int, payment_requirements: PaymentRequirements
 ) -> Dict[str, Any]:
     """Prepare an unsigned payment header with sender address, x402 version, and payment requirements."""
+    nonce = create_nonce()
+    valid_after = str(int(time.time()) - 60)  # 60 seconds before
+    valid_before = str(int(time.time()) + payment_requirements.max_timeout_seconds)
+
     return {
-        "sender": sender_address,
-        "x402_version": x402_version,
-        "payment_requirements": payment_requirements.model_dump(),
+        "x402Version": x402_version,
+        "scheme": payment_requirements.scheme,
+        "network": payment_requirements.network,
+        "payload": {
+            "signature": None,
+            "authorization": {
+                "from": sender_address,
+                "to": payment_requirements.pay_to,
+                "value": payment_requirements.max_amount_required,
+                "validAfter": valid_after,
+                "validBefore": valid_before,
+                "nonce": nonce,
+            },
+        },
     }
 
 
