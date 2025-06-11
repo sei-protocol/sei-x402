@@ -4,15 +4,9 @@ from typing import Dict, Any
 from web3 import Web3
 from x402.encoding import safe_base64_encode, safe_base64_decode
 from x402.types import (
-    PaymentPayload,
-    ExactPaymentPayload,
-    EIP3009Authorization,
     PaymentRequirements,
-    UnsupportedSchemeException,
 )
-from x402.chains import get_chain_id, get_token_name, get_token_version
 import json
-from eth_account.messages import encode_defunct
 
 
 def create_nonce() -> bytes:
@@ -111,13 +105,12 @@ def sign_payment_header(
         # Encode the header
         encoded = encode_payment(header)
         return encoded
-    except Exception as e:
+    except Exception:
         raise
 
 
 def encode_payment(payment_payload: Dict[str, Any]) -> str:
     """Encode a payment payload into a base64 string, handling HexBytes and other non-serializable types."""
-    from x402.encoding import safe_base64_encode
     from hexbytes import HexBytes
 
     def default(obj):
@@ -136,6 +129,5 @@ def encode_payment(payment_payload: Dict[str, Any]) -> str:
 
 def decode_payment(encoded_payment: str) -> Dict[str, Any]:
     """Decode a base64 encoded payment string back into a PaymentPayload object."""
-    from x402.encoding import safe_base64_decode
 
     return json.loads(safe_base64_decode(encoded_payment))

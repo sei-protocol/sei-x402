@@ -1,6 +1,5 @@
 import base64
-import json
-from typing import Dict, Any, Union
+from typing import Union
 
 
 def safe_base64_encode(data: Union[str, bytes]) -> str:

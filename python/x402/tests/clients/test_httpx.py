@@ -7,8 +7,6 @@ from web3 import Web3
 from x402.clients.httpx import HttpxHooks, with_payment_interceptor
 from x402.clients.base import (
     PaymentError,
-    MissingRequestConfigError,
-    PaymentAmountExceededError,
 )
 from x402.types import PaymentRequirements, x402PaymentRequiredResponse
 

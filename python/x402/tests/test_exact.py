@@ -1,6 +1,5 @@
 import pytest
 import time
-import json
 import base64
 from web3 import Web3
 from hexbytes import HexBytes
@@ -11,7 +10,7 @@ from x402.exact import (
     encode_payment,
     decode_payment,
 )
-from x402.types import PaymentRequirements, UnsupportedSchemeException
+from x402.types import PaymentRequirements
 
 
 @pytest.fixture

@@ -5,7 +5,6 @@ from x402.clients.base import (
     x402Client,
     MissingRequestConfigError,
     PaymentError,
-    decode_x_payment_response,
 )
 from x402.types import x402PaymentRequiredResponse
 
@@ -39,7 +38,7 @@ class HttpxHooks:
                 raise MissingRequestConfigError("Missing request configuration")
 
             # Read the response content before parsing
-            content = await response.aread()
+            await response.aread()
 
             data = response.json()
 

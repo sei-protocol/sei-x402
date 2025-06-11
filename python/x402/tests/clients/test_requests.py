@@ -92,7 +92,7 @@ def test_request_missing_config(session):
     mock_response.status_code = 402
     mock_response._content = b"payment required"
 
-    with patch.object(session, "send", return_value=mock_response) as mock_send:
+    with patch.object(session, "send", return_value=mock_response):
         with pytest.raises(
             MissingRequestConfigError, match="Missing request configuration"
         ):
@@ -179,7 +179,7 @@ def test_request_payment_error(session, payment_requirements):
     initial_response.status_code = 402
     initial_response._content = json.dumps(payment_response.model_dump()).encode()
 
-    with patch.object(session, "send", return_value=initial_response) as mock_send:
+    with patch.object(session, "send", return_value=initial_response):
         with pytest.raises(PaymentError):
             session.request("GET", "https://example.com", headers={})
 
@@ -193,7 +193,7 @@ def test_request_general_error(session):
     initial_response.status_code = 402
     initial_response._content = b"invalid json"
 
-    with patch.object(session, "send", return_value=initial_response) as mock_send:
+    with patch.object(session, "send", return_value=initial_response):
         with pytest.raises(PaymentError):
             session.request("GET", "https://example.com", headers={})
 
