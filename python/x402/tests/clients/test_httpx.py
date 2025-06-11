@@ -3,7 +3,7 @@ import json
 import base64
 from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import Request, Response
-from web3 import Web3
+from eth_account import Account
 from x402.clients.httpx import HttpxHooks, with_payment_interceptor
 from x402.clients.base import (
     PaymentError,
@@ -12,11 +12,8 @@ from x402.types import PaymentRequirements, x402PaymentRequiredResponse
 
 
 @pytest.fixture
-def web3():
-    w3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
-    account = w3.eth.account.create()
-    w3.eth.default_account = account
-    return w3, account
+def account():
+    return Account.create()
 
 
 @pytest.fixture
@@ -40,9 +37,8 @@ def payment_requirements():
 
 
 @pytest.fixture
-def hooks(web3):
-    w3, _ = web3
-    return with_payment_interceptor(w3)
+def hooks(account):
+    return with_payment_interceptor(account)
 
 
 @pytest.mark.asyncio
@@ -184,24 +180,24 @@ async def test_on_response_general_error(hooks):
     assert not hooks._is_retry
 
 
-def test_with_payment_interceptor(web3):
-    w3, _ = web3
-
+def test_with_payment_interceptor(account):
     # Test basic interceptor creation
-    hooks = with_payment_interceptor(w3)
+    hooks = with_payment_interceptor(account)
     assert isinstance(hooks, HttpxHooks)
-    assert hooks.client.web3 == w3
+    assert hooks.client.account == account
     assert hooks.client.max_value is None
 
     # Test interceptor with max_value
-    hooks = with_payment_interceptor(w3, max_value=1000)
+    hooks = with_payment_interceptor(account, max_value=1000)
     assert hooks.client.max_value == 1000
 
     # Test interceptor with custom selector
     def custom_selector(accepts, network_filter=None, scheme_filter=None):
         return accepts[0]
 
-    hooks = with_payment_interceptor(w3, payment_requirements_selector=custom_selector)
+    hooks = with_payment_interceptor(
+        account, payment_requirements_selector=custom_selector
+    )
     assert (
         hooks.client.select_payment_requirements
         != hooks.client.__class__.select_payment_requirements

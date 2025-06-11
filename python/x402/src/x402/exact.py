@@ -1,11 +1,12 @@
 import time
 import secrets
 from typing import Dict, Any
-from web3 import Web3
+from eth_account import Account
 from x402.encoding import safe_base64_encode, safe_base64_decode
 from x402.types import (
     PaymentRequirements,
 )
+from x402.chains import get_chain_id
 import json
 
 
@@ -41,7 +42,7 @@ def prepare_payment_header(
 
 
 def sign_payment_header(
-    web3: Web3, payment_requirements: PaymentRequirements, header: dict
+    account: Account, payment_requirements: PaymentRequirements, header: dict
 ) -> str:
     """Sign a payment header using the account's private key."""
     try:
@@ -64,7 +65,7 @@ def sign_payment_header(
             "domain": {
                 "name": payment_requirements.extra["name"],
                 "version": payment_requirements.extra["version"],
-                "chainId": int(web3.eth.chain_id),
+                "chainId": int(get_chain_id(payment_requirements.network)),
                 "verifyingContract": payment_requirements.asset,
             },
             "message": {
@@ -77,12 +78,7 @@ def sign_payment_header(
             },
         }
 
-        account = web3.eth.default_account
-        if not account:
-            raise ValueError("No default account set in Web3 instance")
-
-        signed_message = web3.eth.account.sign_typed_data(
-            private_key=account.key,
+        signed_message = account.sign_typed_data(
             domain_data=typed_data["domain"],
             message_types=typed_data["types"],
             message_data=typed_data["message"],
@@ -121,5 +117,4 @@ def encode_payment(payment_payload: Dict[str, Any]) -> str:
 
 def decode_payment(encoded_payment: str) -> Dict[str, Any]:
     """Decode a base64 encoded payment string back into a PaymentPayload object."""
-
     return json.loads(safe_base64_decode(encoded_payment))

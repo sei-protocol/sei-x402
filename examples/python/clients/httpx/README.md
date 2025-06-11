@@ -7,7 +7,7 @@ This example demonstrates how to use the x402 package with httpx to make request
 1. Install dependencies and run the example:
 ```bash
 uv sync
-uv run python index.py
+uv run python main.py
 ```
 
 ## How it Works

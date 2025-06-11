@@ -3,7 +3,7 @@ import json
 import base64
 from unittest.mock import MagicMock, patch
 from requests import Response
-from web3 import Web3
+from eth_account import Account
 from x402.clients.requests import RequestsSession, with_payment_interceptor
 from x402.clients.base import (
     PaymentError,
@@ -13,17 +13,13 @@ from x402.types import PaymentRequirements, x402PaymentRequiredResponse
 
 
 @pytest.fixture
-def web3():
-    w3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
-    account = w3.eth.account.create()
-    w3.eth.default_account = account
-    return w3, account
+def account():
+    return Account.create()
 
 
 @pytest.fixture
-def session(web3):
-    w3, _ = web3
-    return with_payment_interceptor(w3)
+def session(account):
+    return with_payment_interceptor(account)
 
 
 @pytest.fixture
@@ -201,17 +197,15 @@ def test_request_general_error(session):
         assert not session._is_retry
 
 
-def test_with_payment_interceptor(web3):
-    w3, _ = web3
-
+def test_with_payment_interceptor(account):
     # Test basic interceptor creation
-    session = with_payment_interceptor(w3)
+    session = with_payment_interceptor(account)
     assert isinstance(session, RequestsSession)
-    assert session.client.web3 == w3
+    assert session.client.account == account
     assert session.client.max_value is None
 
     # Test interceptor with max_value
-    session = with_payment_interceptor(w3, max_value=1000)
+    session = with_payment_interceptor(account, max_value=1000)
     assert session.client.max_value == 1000
 
     # Test interceptor with custom selector
@@ -219,7 +213,7 @@ def test_with_payment_interceptor(web3):
         return accepts[0]
 
     session = with_payment_interceptor(
-        w3, payment_requirements_selector=custom_selector
+        account, payment_requirements_selector=custom_selector
     )
     assert (
         session.client.select_payment_requirements

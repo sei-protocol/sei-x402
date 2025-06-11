@@ -1,6 +1,6 @@
 import time
 from typing import Optional, Callable, Dict, Any
-from web3 import Web3
+from eth_account import Account
 from x402.exact import sign_payment_header
 from x402.types import (
     PaymentRequirements,
@@ -58,18 +58,18 @@ class x402Client:
 
     def __init__(
         self,
-        web3: Web3,
+        account: Account,
         max_value: Optional[int] = None,
         payment_requirements_selector: Optional[Callable] = None,
     ):
         """Initialize the x402 client.
 
         Args:
-            web3: Web3 instance for signing payments
+            account: eth_account.Account instance for signing payments
             max_value: Optional maximum allowed payment amount in base units
             payment_requirements_selector: Optional custom selector for payment requirements
         """
-        self.web3 = web3
+        self.account = account
         self.max_value = max_value
         if payment_requirements_selector:
             self.select_payment_requirements = payment_requirements_selector
@@ -147,7 +147,7 @@ class x402Client:
             "payload": {
                 "signature": None,
                 "authorization": {
-                    "from": self.web3.eth.default_account.address,
+                    "from": self.account.address,
                     "to": payment_requirements.pay_to,
                     "value": payment_requirements.max_amount_required,
                     "validAfter": str(int(time.time()) - 60),  # 60 seconds before
@@ -160,7 +160,7 @@ class x402Client:
         }
 
         signed_header = sign_payment_header(
-            self.web3,
+            self.account,
             payment_requirements,
             unsigned_header,
         )

@@ -1,7 +1,7 @@
 import pytest
 import time
 import base64
-from web3 import Web3
+from eth_account import Account
 from hexbytes import HexBytes
 from x402.exact import (
     create_nonce,
@@ -14,11 +14,8 @@ from x402.types import PaymentRequirements
 
 
 @pytest.fixture
-def web3():
-    w3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
-    account = w3.eth.account.create()
-    w3.eth.default_account = account
-    return w3, account
+def account():
+    return Account.create()
 
 
 @pytest.fixture
@@ -53,8 +50,7 @@ def test_create_nonce():
     assert nonce1 != nonce2
 
 
-def test_prepare_payment_header(web3, payment_requirements):
-    w3, account = web3
+def test_prepare_payment_header(account, payment_requirements):
     header = prepare_payment_header(account.address, 1, payment_requirements)
 
     # Test header structure
@@ -75,15 +71,14 @@ def test_prepare_payment_header(web3, payment_requirements):
     assert len(auth["nonce"]) == 32
 
 
-def test_sign_payment_header(web3, payment_requirements):
-    w3, account = web3
+def test_sign_payment_header(account, payment_requirements):
     unsigned_header = prepare_payment_header(account.address, 1, payment_requirements)
 
     # Convert nonce to hex string for signing
     nonce = unsigned_header["payload"]["authorization"]["nonce"]
     unsigned_header["payload"]["authorization"]["nonce"] = nonce.hex()
 
-    signed_message = sign_payment_header(w3, payment_requirements, unsigned_header)
+    signed_message = sign_payment_header(account, payment_requirements, unsigned_header)
 
     # Test signature properties
     assert isinstance(signed_message, str)
@@ -109,17 +104,17 @@ def test_sign_payment_header(web3, payment_requirements):
     assert int(auth["validBefore"]) > int(time.time())
 
 
-def test_sign_payment_header_no_default_account(web3, payment_requirements):
-    w3, account = web3
-    w3.eth.default_account = None
-    unsigned_header = prepare_payment_header(account.address, 1, payment_requirements)
+def test_sign_payment_header_no_account(payment_requirements):
+    unsigned_header = prepare_payment_header(
+        "0x0000000000000000000000000000000000000000", 1, payment_requirements
+    )
 
     # Convert nonce to hex string for signing
     nonce = unsigned_header["payload"]["authorization"]["nonce"]
     unsigned_header["payload"]["authorization"]["nonce"] = nonce.hex()
 
-    with pytest.raises(ValueError, match="No default account set in Web3 instance"):
-        sign_payment_header(w3, payment_requirements, unsigned_header)
+    with pytest.raises(Exception):
+        sign_payment_header(None, payment_requirements, unsigned_header)
 
 
 def test_encode_payment():

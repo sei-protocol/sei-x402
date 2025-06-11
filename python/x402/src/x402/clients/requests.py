@@ -1,6 +1,6 @@
 from typing import Optional, Callable
 import requests
-from web3 import Web3
+from eth_account import Account
 from x402.clients.base import (
     x402Client,
     MissingRequestConfigError,
@@ -66,21 +66,21 @@ class RequestsSession(requests.Session):
 
 
 def with_payment_interceptor(
-    web3: Web3,
+    account: Account,
     max_value: Optional[int] = None,
     payment_requirements_selector: Optional[Callable] = None,
 ) -> RequestsSession:
     """Create a requests session that handles 402 Payment Required responses.
 
     Args:
-        web3: Web3 instance for signing payments
+        account: eth_account.Account instance for signing payments
         max_value: Optional maximum allowed payment amount in base units
         payment_requirements_selector: Optional custom selector for payment requirements
 
     Returns:
         RequestsSession instance that can be used for making requests
     """
-    client = x402Client(web3, max_value=max_value)
+    client = x402Client(account, max_value=max_value)
     if payment_requirements_selector:
         client.select_payment_requirements = payment_requirements_selector
     return RequestsSession(client)

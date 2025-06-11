@@ -1,8 +1,7 @@
 import pytest
 import json
 import base64
-from web3 import Web3
-from web3.middleware import SignAndSendRawMiddlewareBuilder
+from eth_account import Account
 from x402.clients.base import (
     x402Client,
     PaymentAmountExceededError,
@@ -14,18 +13,13 @@ from x402.exact import decode_payment
 
 
 @pytest.fixture
-def web3():
-    w3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
-    account = w3.eth.account.create()
-    w3.middleware_onion.inject(SignAndSendRawMiddlewareBuilder.build(account), layer=0)
-    w3.eth.default_account = account
-    return w3, account
+def account():
+    return Account.create()
 
 
 @pytest.fixture
-def client(web3):
-    w3, _ = web3
-    return x402Client(w3)
+def client(account):
+    return x402Client(account)
 
 
 @pytest.fixture
@@ -75,23 +69,21 @@ def test_decode_x_payment_response():
     assert decoded == response  # Should still decode but with missing fields
 
 
-def test_client_initialization(web3):
-    w3, _ = web3
-
+def test_client_initialization(account):
     # Test basic initialization
-    client = x402Client(w3)
-    assert client.web3 == w3
+    client = x402Client(account)
+    assert client.account == account
     assert client.max_value is None
 
     # Test initialization with max_value
-    client = x402Client(w3, max_value=1000)
+    client = x402Client(account, max_value=1000)
     assert client.max_value == 1000
 
     # Test initialization with custom selector
     def custom_selector(accepts, network_filter=None, scheme_filter=None):
         return accepts[0]  # Just return first requirement
 
-    client = x402Client(w3, payment_requirements_selector=custom_selector)
+    client = x402Client(account, payment_requirements_selector=custom_selector)
     assert client.select_payment_requirements != x402Client.select_payment_requirements
 
 

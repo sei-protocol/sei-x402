@@ -1,7 +1,7 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from web3 import Web3
+from eth_account import Account
 from x402.clients.httpx import with_payment_interceptor
 from x402.clients.base import decode_x_payment_response
 import httpx
@@ -18,18 +18,16 @@ if not all([private_key, base_url, endpoint_path]):
     print("Error: Missing required environment variables")
     exit(1)
 
-# Create Web3 account from private key
-web3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
-account = web3.eth.account.from_key(private_key)
-web3.eth.default_account = account
-print(f"Initialized Web3 with account: {account.address}")
+# Create eth_account from private key
+account = Account.from_key(private_key)
+print(f"Initialized account: {account.address}")
 
 
 async def main():
     # Create httpx client
     async with httpx.AsyncClient(base_url=base_url) as client:
         # Add payment interceptor hooks
-        hooks = with_payment_interceptor(web3)
+        hooks = with_payment_interceptor(account)
         client.event_hooks = {
             "request": [hooks.on_request],
             "response": [hooks.on_response],
