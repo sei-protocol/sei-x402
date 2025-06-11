@@ -18,3 +18,6 @@ def parse_money(amount: str | int, address: str, network_id: str) -> int:
         amount = amount * Decimal(10**decimals)
         return int(amount)
     return amount
+
+
+x402_VERSION = 1

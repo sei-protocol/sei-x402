@@ -5,7 +5,6 @@ from x402.types import (
     PaymentRequirements,
     UnsupportedSchemeException,
 )
-from eth_account import Account
 import secrets
 
 
@@ -49,7 +48,7 @@ class x402Client:
             "chainId": chain_id,
             "verifyingContract": payment_requirements.asset,
         }
-        primaryType = "TransferWithAuthorization"
+        # primaryType = "TransferWithAuthorization"
         message = {
             "from": self.web3.eth.account,
             "to": payment_requirements.pay_to,

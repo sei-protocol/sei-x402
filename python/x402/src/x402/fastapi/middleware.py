@@ -1,18 +1,22 @@
 import base64
-from decimal import Decimal
-from typing import Optional, Any, Callable
+import fnmatch
+import re
+from typing import Any, Callable, Optional
+
 from fastapi import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from pydantic import validate_call
 
-from x402.chains import get_chain_id, get_token_decimals
-from x402.common import parse_money
-from x402.types import PaymentRequirements, PaymentRequiredResponse
+from x402.chains import get_chain_id
+from x402.common import parse_money, x402_VERSION
 from x402.facilitator import FacilitatorClient
+from x402.types import PaymentRequirements, x402PaymentRequiredResponse
 
 
-def get_usdc_address(chain_id: int) -> str:
+def get_usdc_address(chain_id: int | str) -> str:
     """Get the USDC contract address for a given chain ID"""
+    if isinstance(chain_id, str):
+        chain_id = int(chain_id)
     if chain_id == 84532:  # Base Sepolia testnet
         return "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
     elif chain_id == 8453:  # Base mainnet
@@ -20,11 +24,45 @@ def get_usdc_address(chain_id: int) -> str:
     raise ValueError(f"Unsupported chain ID: {chain_id}")
 
 
+def _path_is_match(path: str | list[str], request_path: str) -> bool:
+    """
+    Check if request path matches the specified path pattern(s).
+
+    Supports:
+    - Exact matching: "/api/users"
+    - Glob patterns: "/api/users/*", "/api/*/profile"
+    - Regex patterns (prefix with 'regex:'): "regex:^/api/users/\d+$"
+    - List of any of the above
+    """
+
+    def single_path_match(pattern: str) -> bool:
+        # Regex pattern
+        if pattern.startswith("regex:"):
+            regex_pattern = pattern[6:]  # Remove 'regex:' prefix
+            return bool(re.match(regex_pattern, request_path))
+
+        # Glob pattern (contains * or ?)
+        elif "*" in pattern or "?" in pattern:
+            return fnmatch.fnmatch(request_path, pattern)
+
+        # Exact match
+        else:
+            return pattern == request_path
+
+    if isinstance(path, str):
+        return single_path_match(path)
+    elif isinstance(path, list):
+        return any(single_path_match(p) for p in path)
+
+    return False
+
+
 @validate_call
 def require_payment(
     amount: str | int,
     pay_to_address: str,
     path: str | list[str] = "*",
+    asset: str = "",
     description: str = "",
     mime_type: str = "",
     max_deadline_seconds: int = 60,
@@ -53,24 +91,22 @@ def require_payment(
         Callable: FastAPI middleware function that checks for valid payment before processing requests
     """
 
+    if asset == "":
+        asset = get_usdc_address(get_chain_id(network_id))
+
     try:
-        parsed_amount = parse_money(amount)
-    except Exception:
+        parsed_amount = parse_money(amount, asset, network_id)
+    except Exception as e:
         raise ValueError(
-            f"Invalid amount: {amount}. Must be in the form '$3.10', 0.10, '0.001'"
+            f"Invalid amount: {amount}. Must be in the form '$3.10', 0.10, '0.001'. Error: {e}"
         )
 
     facilitator = FacilitatorClient(facilitator_url)
 
     async def middleware(request: Request, call_next: Callable):
         # Skip if the path is not the same as the path in the middleware
-        if path != "*":
-            if isinstance(path, str):
-                if path != request.url.path:
-                    return await call_next(request)
-            elif isinstance(path, list):
-                if request.url.path not in path:
-                    return await call_next(request)
+        if not _path_is_match(path, request.url.path):
+            return await call_next(request)
 
         # Get resource URL if not explicitly provided
         resource_url = resource or str(request.url)
@@ -79,6 +115,7 @@ def require_payment(
         payment_details = PaymentRequirements(
             scheme="exact",
             network=network_id,
+            asset=asset,
             max_amount_required=str(parsed_amount),
             resource=resource_url,
             description=description,
@@ -89,32 +126,33 @@ def require_payment(
             extra=None,
         )
 
+        def x402_response(error: str):
+            return JSONResponse(
+                content=x402PaymentRequiredResponse(
+                    x402_version=x402_VERSION,
+                    accepts=[payment_details],
+                    error=error,
+                ).model_dump(),
+                status_code=402,
+            )
+
         # Check for payment header
         payment = request.headers.get("X-PAYMENT", "")
 
         if payment == "":  # Return JSON response for API requests
             # TODO: add support for html paywall
 
-            return JSONResponse(
-                content=PaymentRequiredResponse(
-                    paymentDetails=payment_details,
-                    error="X-PAYMENT header is required",
-                ).model_dump(),
-                status_code=402,
-            )
+            return x402_response("No X-PAYMENT header provided")
 
         # Verify payment
 
         verify_response = await facilitator.verify(payment, payment_details)
 
         if not verify_response.is_valid:
-            return JSONResponse(
-                content=PaymentRequiredResponse(
-                    paymentDetails=payment_details,
-                    error="Invalid payment: " + verify_response.invalid_reason,
-                ).model_dump(),
-                status_code=402,
-            )
+            return x402_response("Invalid payment: " + verify_response.invalid_reason)
+
+        request.state.payment_details = payment_details
+        request.state.verify_response = verify_response
 
         # Process the request
         response = await call_next(request)
@@ -131,22 +169,9 @@ def require_payment(
                     settle_response.model_dump_json().encode("utf-8")
                 ).decode("utf-8")
             else:
-                return JSONResponse(
-                    content=PaymentRequiredResponse(
-                        paymentDetails=payment_details,
-                        error="Settle failed: " + settle_response.error,
-                    ).model_dump(),
-                    status_code=402,
-                )
-        except Exception as e:
-            print(e)
-            return JSONResponse(
-                content={
-                    "error": str(e),
-                    "paymentDetails": payment_details.model_dump(),
-                },
-                status_code=402,
-            )
+                return x402_response("Settle failed: " + settle_response.error)
+        except Exception:
+            return x402_response("Settle failed")
 
         return response
 

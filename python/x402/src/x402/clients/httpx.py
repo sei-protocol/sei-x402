@@ -1,5 +1,5 @@
 from httpx import Request, Response
-from eth_account import Account
+
 from web3 import Web3
 
 
@@ -12,7 +12,7 @@ class HttpxHooks:
 
 
 def pay_for_request_hook(
-    account: Web3,
+    _account: Web3,
 ):
     """ """
 
