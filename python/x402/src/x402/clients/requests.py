@@ -4,7 +4,6 @@ from web3 import Web3
 from x402.clients.base import (
     x402Client,
     MissingRequestConfigError,
-    PaymentAlreadyAttemptedError,
     PaymentError,
 )
 from x402.types import x402PaymentRequiredResponse
@@ -47,20 +46,18 @@ class RequestsSession(requests.Session):
             # Mark as retry and add payment header
             self._is_retry = True
             headers = kwargs.get("headers", {})
-            headers["X-PAYMENT"] = payment_header
-            headers["Access-Control-Expose-Headers"] = "X-PAYMENT-RESPONSE"
+            headers["X-Payment"] = payment_header
+            headers["Access-Control-Expose-Headers"] = "X-Payment-Response"
             kwargs["headers"] = headers
 
             # Retry the request
             retry_response = super().request(method, url, **kwargs)
 
-            # Store the payment response header for access
-            if "X-PAYMENT-RESPONSE" in retry_response.headers:
-                retry_response._payment_response = retry_response.headers[
-                    "X-PAYMENT-RESPONSE"
-                ]
-
-            return retry_response
+            # Copy the retry response data to the original response
+            response.status_code = retry_response.status_code
+            response.headers = retry_response.headers
+            response._content = retry_response._content
+            return response
 
         except PaymentError as e:
             # Reset retry flag and re-raise payment errors
