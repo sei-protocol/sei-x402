@@ -21,10 +21,6 @@ class HttpxHooks:
     async def on_response(self, response: Response) -> Response:
         """Handle response after it is received."""
 
-        # If this is a successful response with a payment response header, store it and return
-        if response.status_code == 200:
-            return response
-
         # If this is not a 402, just return the response
         if response.status_code != 402:
             return response
@@ -58,7 +54,6 @@ class HttpxHooks:
             self._is_retry = True
             request = response.request
 
-            # Use the payment header directly - it's already base64 encoded from exact.py
             request.headers["X-Payment"] = payment_header
             request.headers["Access-Control-Expose-Headers"] = "X-Payment-Response"
 
@@ -73,11 +68,9 @@ class HttpxHooks:
                 return response
 
         except PaymentError as e:
-            # Reset retry flag and re-raise payment errors
             self._is_retry = False
             raise e
         except Exception as e:
-            # Reset retry flag and wrap other errors
             self._is_retry = False
             raise PaymentError(f"Failed to handle payment: {str(e)}") from e
 

@@ -29,7 +29,6 @@ class RequestsSession(requests.Session):
             if not kwargs:
                 raise MissingRequestConfigError("Missing request configuration")
 
-            # Parse the 402 response
             data = response.json()
             payment_response = x402PaymentRequiredResponse(**data)
 
@@ -50,7 +49,6 @@ class RequestsSession(requests.Session):
             headers["Access-Control-Expose-Headers"] = "X-Payment-Response"
             kwargs["headers"] = headers
 
-            # Retry the request
             retry_response = super().request(method, url, **kwargs)
 
             # Copy the retry response data to the original response
@@ -60,11 +58,9 @@ class RequestsSession(requests.Session):
             return response
 
         except PaymentError as e:
-            # Reset retry flag and re-raise payment errors
             self._is_retry = False
             raise e
         except Exception as e:
-            # Reset retry flag and wrap other errors
             self._is_retry = False
             raise PaymentError(f"Failed to handle payment: {str(e)}") from e
 

@@ -140,7 +140,6 @@ class x402Client:
             Signed payment header
         """
 
-        # Prepare unsigned header matching TypeScript structure
         unsigned_header = {
             "x402Version": x402_version,
             "scheme": payment_requirements.scheme,
@@ -160,7 +159,6 @@ class x402Client:
             },
         }
 
-        # Sign the header
         signed_header = sign_payment_header(
             self.web3,
             payment_requirements,

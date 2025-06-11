@@ -45,13 +45,10 @@ def sign_payment_header(
 ) -> str:
     """Sign a payment header using the account's private key."""
     try:
-        # Get the authorization object
         auth = header["payload"]["authorization"]
 
-        # Convert nonce to bytes for signing
         nonce_bytes = bytes.fromhex(auth["nonce"])
 
-        # Create the typed data for EIP-712 signing
         typed_data = {
             "types": {
                 "TransferWithAuthorization": [
@@ -80,12 +77,10 @@ def sign_payment_header(
             },
         }
 
-        # Get the account's private key
         account = web3.eth.default_account
         if not account:
             raise ValueError("No default account set in Web3 instance")
 
-        # Sign the typed data
         signed_message = web3.eth.account.sign_typed_data(
             private_key=account.key,
             domain_data=typed_data["domain"],
@@ -96,13 +91,10 @@ def sign_payment_header(
         if not signature.startswith("0x"):
             signature = f"0x{signature}"
 
-        # Add signature to header
         header["payload"]["signature"] = signature
 
-        # Add 0x prefix to nonce for the final header
         header["payload"]["authorization"]["nonce"] = f"0x{auth['nonce']}"
 
-        # Encode the header
         encoded = encode_payment(header)
         return encoded
     except Exception:
