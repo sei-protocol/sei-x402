@@ -1,7 +1,7 @@
 [project]
 name = "x402"
 version = "0.1.0"
-description = "x402 payment protocol implementation"
+description = "x402: An internet native payments protocol"
 readme = "README.md"
 authors = [
     { name = "erik", email = "erik.reppel@coinbase.com" },
