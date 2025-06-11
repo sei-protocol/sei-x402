@@ -15,8 +15,6 @@ import secrets
 from x402.encoding import safe_base64_decode
 import json
 
-logger = logging.getLogger(__name__)
-
 
 def decode_x_payment_response(header: str) -> Dict[str, Any]:
     """Decode the X-PAYMENT-RESPONSE header.
@@ -31,10 +29,8 @@ def decode_x_payment_response(header: str) -> Dict[str, Any]:
         - network: str
         - payer: str (address)
     """
-    logger.debug(f"Decoding payment response header: {header}")
     decoded = safe_base64_decode(header)
     result = json.loads(decoded)
-    logger.debug(f"Decoded payment response: {result}")
     return result
 
 
@@ -82,7 +78,6 @@ class x402Client:
         self.max_value = max_value
         if payment_requirements_selector:
             self.select_payment_requirements = payment_requirements_selector
-        logger.info(f"Initialized x402Client with max_value={max_value}")
 
     def select_payment_requirements(self, accepts: list) -> PaymentRequirements:
         """Select payment requirements from the list of accepted requirements.
@@ -96,11 +91,9 @@ class x402Client:
         Raises:
             UnsupportedSchemeException: If no supported scheme is found
         """
-        logger.debug(f"Selecting payment requirements from: {accepts}")
         for req in accepts:
             # If it's a dict, use key access; if it's a model, use attribute
             scheme = req["scheme"] if isinstance(req, dict) else req.scheme
-            logger.debug(f"Checking scheme: {scheme}")
             if scheme == "exact":
                 # If it's already a PaymentRequirements, return it; else, construct it
                 result = (
@@ -108,9 +101,7 @@ class x402Client:
                     if isinstance(req, PaymentRequirements)
                     else PaymentRequirements(**req)
                 )
-                logger.info(f"Selected payment requirements: {result}")
                 return result
-        logger.error("No supported payment scheme found")
         raise UnsupportedSchemeException("No supported payment scheme found")
 
     def create_payment_header(
@@ -125,9 +116,6 @@ class x402Client:
         Returns:
             Signed payment header
         """
-        logger.debug(
-            f"Creating payment header for version {x402_version} with requirements: {payment_requirements}"
-        )
 
         # Prepare unsigned header matching TypeScript structure
         unsigned_header = {
@@ -148,7 +136,6 @@ class x402Client:
                 },
             },
         }
-        logger.debug(f"Prepared unsigned header: {unsigned_header}")
 
         # Sign the header
         signed_header = sign_payment_header(
@@ -156,11 +143,9 @@ class x402Client:
             payment_requirements,
             unsigned_header,
         )
-        logger.info("Successfully created signed payment header")
         return signed_header
 
     def generate_nonce(self):
         # Generate a random nonce (32 bytes = 64 hex chars)
         nonce = secrets.token_hex(32)
-        logger.debug(f"Generated nonce: {nonce}")
         return nonce

@@ -13,9 +13,6 @@ from x402.types import (
 from x402.chains import get_chain_id, get_token_name, get_token_version
 import json
 from eth_account.messages import encode_defunct
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def create_nonce() -> bytes:
@@ -41,11 +38,9 @@ def sign_payment_header(
     try:
         # Get the authorization object
         auth = header["payload"]["authorization"]
-        logger.debug(f"Signing authorization: {auth}")
 
         # Convert nonce to bytes for signing
         nonce_bytes = bytes.fromhex(auth["nonce"])
-        logger.debug(f"Converted nonce to bytes: {nonce_bytes.hex()}")
 
         # Create the typed data for EIP-712 signing
         typed_data = {
@@ -75,7 +70,6 @@ def sign_payment_header(
                 "nonce": nonce_bytes,
             },
         }
-        logger.debug(f"Typed data for signing: {typed_data}")
 
         # Get the account's private key
         account = web3.eth.default_account
@@ -92,7 +86,6 @@ def sign_payment_header(
         signature = signed_message.signature.hex()
         if not signature.startswith("0x"):
             signature = f"0x{signature}"
-        logger.debug(f"Generated signature: {signature}")
 
         # Add signature to header
         header["payload"]["signature"] = signature
@@ -102,10 +95,8 @@ def sign_payment_header(
 
         # Encode the header
         encoded = encode_payment(header)
-        logger.debug(f"Encoded payment header: {encoded}")
         return encoded
     except Exception as e:
-        logger.error(f"Error signing payment header: {e}")
         raise
 
 
