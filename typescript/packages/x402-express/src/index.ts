@@ -122,6 +122,9 @@ export function paymentMiddleware(
     const acceptHeader = req.header("Accept") || "";
     const isWebBrowser = acceptHeader.includes("text/html") && userAgent.includes("Mozilla");
 
+    console.log("Received headers:", req.headers);
+    console.log("Payment header value:", payment);
+
     if (!payment) {
       if (isWebBrowser) {
         let displayAmount: number;
@@ -170,6 +173,8 @@ export function paymentMiddleware(
       return;
     }
 
+    console.log("Decoded payment:", decodedPayment);
+
     const selectedPaymentRequirements = findMatchingPaymentRequirements(
       paymentRequirements,
       decodedPayment,
@@ -183,8 +188,11 @@ export function paymentMiddleware(
       return;
     }
 
+    console.log("Selected payment requirements:", selectedPaymentRequirements);
+
     try {
       const response = await verify(decodedPayment, selectedPaymentRequirements);
+      console.log("Verification response:", response);
       if (!response.isValid) {
         res.status(402).json({
           x402Version,
@@ -195,6 +203,7 @@ export function paymentMiddleware(
         return;
       }
     } catch (error) {
+      console.log("Error verifying payment:", error);
       res.status(402).json({
         x402Version,
         error,
@@ -222,8 +231,11 @@ export function paymentMiddleware(
     await next();
 
     try {
+      console.log("Settling payment:");
       const settleResponse = await settle(decodedPayment, selectedPaymentRequirements);
+      console.log("Settlement response:", settleResponse);
       const responseHeader = settleResponseHeader(settleResponse);
+      console.log("Response header:", responseHeader);
       res.setHeader("X-PAYMENT-RESPONSE", responseHeader);
     } catch (error) {
       // If settlement fails and the response hasn't been sent yet, return an error
