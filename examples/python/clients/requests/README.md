@@ -22,25 +22,25 @@ python extensible.py
 
 ### Simple Approach (main.py)
 
-The simple approach uses `create_x402_session`, which returns a pre-configured session that handles payments automatically:
+The simple approach uses `x402_requests`, which returns a pre-configured session that handles payments automatically:
 
 ```python
-from x402.clients import create_x402_session
+from x402.clients import x402_requests
 
-session = create_x402_session(account)
+session = x402_requests(account)
 response = session.get(url)
 ```
 
 ### Extensible Approach (extensible.py)
 
-The extensible approach uses `create_x402_adapter` with your own requests session:
+The extensible approach uses `x402_http_adapter` with your own requests session:
 
 ```python
-from x402.clients import create_x402_adapter
+from x402.clients import x402_http_adapter
 import requests
 
 session = requests.Session()
-adapter = create_x402_adapter(account)
+adapter = x402_http_adapter(account)
 session.mount("http://", adapter)
 session.mount("https://", adapter)
 response = session.get(url)

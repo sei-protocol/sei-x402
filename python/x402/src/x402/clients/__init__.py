@@ -5,8 +5,8 @@ from x402.clients.httpx import (
 )
 from x402.clients.requests import (
     x402HTTPAdapter,
-    create_x402_adapter,
-    create_x402_session,
+    x402_http_adapter,
+    x402_requests,
 )
 
 __all__ = [
@@ -15,7 +15,6 @@ __all__ = [
     "x402_payment_hooks",
     "x402HttpxClient",
     "x402HTTPAdapter",
-    "create_x402_adapter",
-    "create_x402_session",
-    "with_requests_payment_interceptor",
+    "x402_http_adapter",
+    "x402_requests",
 ]

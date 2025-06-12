@@ -83,7 +83,7 @@ class x402HTTPAdapter(HTTPAdapter):
             raise PaymentError(f"Failed to handle payment: {str(e)}") from e
 
 
-def create_x402_adapter(
+def x402_http_adapter(
     account: Account,
     max_value: Optional[int] = None,
     payment_requirements_selector: Optional[PaymentSelectorCallable] = None,
@@ -110,7 +110,7 @@ def create_x402_adapter(
     return x402HTTPAdapter(client, **kwargs)
 
 
-def create_x402_session(
+def x402_requests(
     account: Account,
     max_value: Optional[int] = None,
     payment_requirements_selector: Optional[PaymentSelectorCallable] = None,
@@ -130,7 +130,7 @@ def create_x402_session(
         Session with x402 payment handling configured
     """
     session = requests.Session()
-    adapter = create_x402_adapter(
+    adapter = x402_http_adapter(
         account,
         max_value=max_value,
         payment_requirements_selector=payment_requirements_selector,

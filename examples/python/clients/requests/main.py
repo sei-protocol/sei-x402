@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from eth_account import Account
-from x402.clients.requests import create_x402_session
+from x402.clients.requests import x402_requests
 from x402.clients.base import decode_x_payment_response
 
 # Load environment variables
@@ -23,7 +23,7 @@ print(f"Initialized account: {account.address}")
 
 def main():
     # Create requests session with x402 payment handling
-    session = create_x402_session(account)
+    session = x402_requests(account)
 
     # Make request
     try:

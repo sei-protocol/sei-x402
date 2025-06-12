@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from eth_account import Account
-from x402.clients.requests import create_x402_adapter
+from x402.clients.requests import x402_http_adapter
 from x402.clients.base import decode_x_payment_response
 import requests
 
@@ -25,7 +25,7 @@ print(f"Initialized account: {account.address}")
 def main():
     # Create a session and mount the x402 adapter
     session = requests.Session()
-    adapter = create_x402_adapter(account)
+    adapter = x402_http_adapter(account)
 
     # Mount the adapter for both HTTP and HTTPS
     session.mount("http://", adapter)
