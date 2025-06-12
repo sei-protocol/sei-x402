@@ -6,6 +6,7 @@ from x402.types import (
     PaymentRequirements,
     UnsupportedSchemeException,
 )
+from x402.common import x402_VERSION
 import secrets
 from x402.encoding import safe_base64_decode
 import json
@@ -128,7 +129,9 @@ class x402Client:
         raise UnsupportedSchemeException("No supported payment scheme found")
 
     def create_payment_header(
-        self, x402_version: int, payment_requirements: PaymentRequirements
+        self,
+        x402_version: int = x402_VERSION,
+        payment_requirements: PaymentRequirements = None,
     ) -> str:
         """Create a payment header for the given requirements.
 

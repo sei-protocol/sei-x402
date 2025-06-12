@@ -1,27 +1,54 @@
 # x402 httpx Client Example
 
-This example demonstrates how to use the x402 package with httpx to make requests to 402-protected endpoints.
+This example demonstrates two different approaches to use the x402 package with httpx to make requests to 402-protected endpoints.
 
 ## Setup and Usage
 
-1. Install dependencies and run the example:
+1. Install dependencies:
 ```bash
 uv sync
+```
+
+2. Run one of the examples:
+```bash
+# Simple approach
 uv run python main.py
+
+# Extensible approach
+uv run python extensible.py
+```
+
+## Two Integration Approaches
+
+### Simple Approach (main.py)
+
+The simple approach uses `x402HttpxClient`, a pre-configured client that handles payments automatically:
+
+```python
+from x402.clients import x402HttpxClient
+
+async with x402HttpxClient(account=account, base_url=base_url) as client:
+    response = await client.get(endpoint_path)
+```
+
+### Extensible Approach (extensible.py)
+
+The extensible approach uses `x402_payment_hooks` with your own httpx client:
+
+```python
+from x402.clients import x402_payment_hooks
+import httpx
+
+async with httpx.AsyncClient(base_url=base_url) as client:
+    client.event_hooks = x402_payment_hooks(account)
+    response = await client.get(endpoint_path)
 ```
 
 ## How it Works
 
-The example:
-1. Initializes a Web3 instance with a Base Sepolia provider
-2. Creates a new account for testing
-3. Initializes the x402 client with httpx
-4. Makes a request to a protected endpoint
-5. Handles the 402 Payment Required response automatically
-6. Prints the final response
-
-## Notes
-
-- This example uses Base Sepolia testnet. For production, use the appropriate network.
-- The example creates a new account for testing. In production, you should use a proper wallet.
-- Make sure your API endpoint is properly configured to handle 402 responses. 
+Both examples:
+1. Initialize an eth_account.Account instance from a private key
+2. Configure the httpx client with x402 payment handling
+3. Make a request to a protected endpoint
+4. Handle the 402 Payment Required response automatically
+5. Print the final response

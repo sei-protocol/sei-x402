@@ -1,14 +1,21 @@
 from x402.clients.base import x402Client, decode_x_payment_response
 from x402.clients.httpx import (
-    with_payment_interceptor as with_httpx_payment_interceptor,
+    x402_payment_hooks,
+    x402HttpxClient,
 )
 from x402.clients.requests import (
-    with_payment_interceptor as with_requests_payment_interceptor,
+    x402HTTPAdapter,
+    create_x402_adapter,
+    create_x402_session,
 )
 
 __all__ = [
     "x402Client",
     "decode_x_payment_response",
-    "with_httpx_payment_interceptor",
+    "x402_payment_hooks",
+    "x402HttpxClient",
+    "x402HTTPAdapter",
+    "create_x402_adapter",
+    "create_x402_session",
     "with_requests_payment_interceptor",
 ]

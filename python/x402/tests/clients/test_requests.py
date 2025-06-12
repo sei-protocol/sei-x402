@@ -2,12 +2,15 @@ import pytest
 import json
 import base64
 from unittest.mock import MagicMock, patch
-from requests import Response
+from requests import Response, PreparedRequest, Session
 from eth_account import Account
-from x402.clients.requests import RequestsSession, with_payment_interceptor
+from x402.clients.requests import (
+    x402HTTPAdapter,
+    create_x402_adapter,
+    create_x402_session,
+)
 from x402.clients.base import (
     PaymentError,
-    MissingRequestConfigError,
 )
 from x402.types import PaymentRequirements, x402PaymentRequiredResponse
 
@@ -19,7 +22,12 @@ def account():
 
 @pytest.fixture
 def session(account):
-    return with_payment_interceptor(account)
+    return create_x402_session(account)
+
+
+@pytest.fixture
+def adapter(account):
+    return create_x402_adapter(account)
 
 
 @pytest.fixture
@@ -68,34 +76,60 @@ def test_request_non_402(session):
         mock_send.assert_called_once()
 
 
-def test_request_retry(session):
-    # Test retry request
-    session._is_retry = True
+def test_adapter_send_success(adapter):
+    # Test adapter with successful response
+    mock_response = Response()
+    mock_response.status_code = 200
+    mock_response._content = b"success"
+
+    # Create a prepared request
+    request = PreparedRequest()
+    request.prepare("GET", "https://example.com")
+
+    with patch("requests.adapters.HTTPAdapter.send", return_value=mock_response):
+        response = adapter.send(request)
+        assert response.status_code == 200
+        assert response.content == b"success"
+
+
+def test_adapter_send_non_402(adapter):
+    # Test adapter with non-402 response
+    mock_response = Response()
+    mock_response.status_code = 404
+    mock_response._content = b"not found"
+
+    # Create a prepared request
+    request = PreparedRequest()
+    request.prepare("GET", "https://example.com")
+
+    with patch("requests.adapters.HTTPAdapter.send", return_value=mock_response):
+        response = adapter.send(request)
+        assert response.status_code == 404
+        assert response.content == b"not found"
+
+
+def test_adapter_retry(adapter):
+    # Test retry handling in adapter
     mock_response = Response()
     mock_response.status_code = 402
     mock_response._content = b"payment required"
 
-    with patch.object(session, "send", return_value=mock_response) as mock_send:
-        response = session.request("GET", "https://example.com")
+    # Create a prepared request
+    request = PreparedRequest()
+    request.prepare("GET", "https://example.com")
+
+    # Set retry flag to true
+    adapter._is_retry = True
+
+    with patch("requests.adapters.HTTPAdapter.send", return_value=mock_response):
+        response = adapter.send(request)
         assert response.status_code == 402
         assert response.content == b"payment required"
-        mock_send.assert_called_once()
+        # Verify retry flag is reset after call
+        assert not adapter._is_retry
 
 
-def test_request_missing_config(session):
-    # Test missing request configuration
-    mock_response = Response()
-    mock_response.status_code = 402
-    mock_response._content = b"payment required"
-
-    with patch.object(session, "send", return_value=mock_response):
-        with pytest.raises(
-            MissingRequestConfigError, match="Missing request configuration"
-        ):
-            session.request("GET", "https://example.com")
-
-
-def test_request_payment_flow(session, payment_requirements):
+def test_adapter_payment_flow(adapter, payment_requirements):
     # Mock the payment required response
     payment_response = x402PaymentRequiredResponse(
         x402_version=1,
@@ -122,38 +156,47 @@ def test_request_payment_flow(session, payment_requirements):
             json.dumps(payment_result).encode()
         ).decode()
     }
+    retry_response._content = b"success"
 
-    # Mock both required methods
-    session.client.select_payment_requirements = MagicMock(
+    # Create a prepared request
+    request = PreparedRequest()
+    request.prepare("GET", "https://example.com")
+    request.headers = {}
+
+    # Mock client methods
+    adapter.client.select_payment_requirements = MagicMock(
         return_value=payment_requirements
     )
     mock_header = "mock_payment_header"
-    session.client.create_payment_header = MagicMock(return_value=mock_header)
+    adapter.client.create_payment_header = MagicMock(return_value=mock_header)
 
     # Mock the send method to return different responses
-    def mock_send(request, **kwargs):
-        if session._is_retry:
+    def mock_send_impl(req, **kwargs):
+        if adapter._is_retry:
             return retry_response
         return initial_response
 
-    with patch.object(session, "send", side_effect=mock_send) as mock_send:
-        response = session.request("GET", "https://example.com", headers={})
+    with patch(
+        "requests.adapters.HTTPAdapter.send", side_effect=mock_send_impl
+    ) as mock_send:
+        response = adapter.send(request)
 
         # Verify the result
         assert response.status_code == 200
         assert "X-Payment-Response" in response.headers
 
         # Verify the mocked methods were called with correct arguments
-        session.client.select_payment_requirements.assert_called_once_with(
+        adapter.client.select_payment_requirements.assert_called_once_with(
             [payment_requirements]
         )
-        session.client.create_payment_header.assert_called_once_with(
+        adapter.client.create_payment_header.assert_called_once_with(
             1, payment_requirements
         )
 
         # Verify the retry request was made with correct headers
         assert mock_send.call_count == 2
-        retry_request = mock_send.call_args[0][0]
+        retry_call = mock_send.call_args_list[1]
+        retry_request = retry_call[0][0]
         assert retry_request.headers["X-Payment"] == mock_header
         assert (
             retry_request.headers["Access-Control-Expose-Headers"]
@@ -161,7 +204,7 @@ def test_request_payment_flow(session, payment_requirements):
         )
 
 
-def test_request_payment_error(session, payment_requirements):
+def test_adapter_payment_error(adapter, payment_requirements):
     # Mock the payment required response with unsupported scheme
     payment_requirements.scheme = "unsupported"
     payment_response = x402PaymentRequiredResponse(
@@ -175,47 +218,93 @@ def test_request_payment_error(session, payment_requirements):
     initial_response.status_code = 402
     initial_response._content = json.dumps(payment_response.model_dump()).encode()
 
-    with patch.object(session, "send", return_value=initial_response):
+    # Create a prepared request
+    request = PreparedRequest()
+    request.prepare("GET", "https://example.com")
+
+    with patch("requests.adapters.HTTPAdapter.send", return_value=initial_response):
         with pytest.raises(PaymentError):
-            session.request("GET", "https://example.com", headers={})
+            adapter.send(request)
 
         # Verify retry flag is reset
-        assert not session._is_retry
+        assert not adapter._is_retry
 
 
-def test_request_general_error(session):
+def test_adapter_general_error(adapter):
     # Create initial 402 response with invalid JSON
     initial_response = Response()
     initial_response.status_code = 402
     initial_response._content = b"invalid json"
 
-    with patch.object(session, "send", return_value=initial_response):
+    # Create a prepared request
+    request = PreparedRequest()
+    request.prepare("GET", "https://example.com")
+
+    with patch("requests.adapters.HTTPAdapter.send", return_value=initial_response):
         with pytest.raises(PaymentError):
-            session.request("GET", "https://example.com", headers={})
+            adapter.send(request)
 
         # Verify retry flag is reset
-        assert not session._is_retry
+        assert not adapter._is_retry
 
 
-def test_with_payment_interceptor(account):
-    # Test basic interceptor creation
-    session = with_payment_interceptor(account)
-    assert isinstance(session, RequestsSession)
-    assert session.client.account == account
-    assert session.client.max_value is None
+def test_create_x402_adapter(account):
+    # Test basic adapter creation
+    adapter = create_x402_adapter(account)
+    assert isinstance(adapter, x402HTTPAdapter)
+    assert adapter.client.account == account
+    assert adapter.client.max_value is None
 
-    # Test interceptor with max_value
-    session = with_payment_interceptor(account, max_value=1000)
-    assert session.client.max_value == 1000
+    # Test with max_value
+    adapter = create_x402_adapter(account, max_value=1000)
+    assert adapter.client.max_value == 1000
 
-    # Test interceptor with custom selector
+    # Test with custom selector
     def custom_selector(accepts, network_filter=None, scheme_filter=None):
         return accepts[0]
 
-    session = with_payment_interceptor(
+    adapter = create_x402_adapter(
         account, payment_requirements_selector=custom_selector
     )
     assert (
-        session.client.select_payment_requirements
-        != session.client.__class__.select_payment_requirements
+        adapter.client.select_payment_requirements
+        != adapter.client.__class__.select_payment_requirements
+    )
+
+    # Test passing adapter kwargs
+    adapter = create_x402_adapter(account, pool_connections=10, pool_maxsize=100)
+    # Note: HTTPAdapter doesn't expose these properties, so we can't directly assert them
+
+
+def test_create_x402_session(account):
+    # Test session creation
+    session = create_x402_session(account)
+    assert isinstance(session, Session)
+
+    # Check http adapter mounting
+    adapter = session.adapters.get("http://")
+    assert isinstance(adapter, x402HTTPAdapter)
+    assert adapter.client.account == account
+
+    # Check https adapter mounting
+    adapter = session.adapters.get("https://")
+    assert isinstance(adapter, x402HTTPAdapter)
+    assert adapter.client.account == account
+
+    # Test with max_value
+    session = create_x402_session(account, max_value=1000)
+    adapter = session.adapters.get("http://")
+    assert adapter.client.max_value == 1000
+
+    # Test with custom selector
+    def custom_selector(accepts, network_filter=None, scheme_filter=None):
+        return accepts[0]
+
+    session = create_x402_session(
+        account, payment_requirements_selector=custom_selector
+    )
+    adapter = session.adapters.get("http://")
+    assert (
+        adapter.client.select_payment_requirements
+        != adapter.client.__class__.select_payment_requirements
     )

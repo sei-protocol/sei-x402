@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict
 from httpx import Request, Response, AsyncClient
 from eth_account import Account
 from x402.clients.base import (
@@ -75,12 +75,12 @@ class HttpxHooks:
             raise PaymentError(f"Failed to handle payment: {str(e)}") from e
 
 
-def with_payment_interceptor(
+def x402_payment_hooks(
     account: Account,
     max_value: Optional[int] = None,
     payment_requirements_selector: Optional[Callable] = None,
-) -> HttpxHooks:
-    """Create httpx hooks that handle 402 Payment Required responses.
+) -> Dict[str, list]:
+    """Create httpx event hooks dictionary for handling 402 Payment Required responses.
 
     Args:
         account: eth_account.Account instance for signing payments
@@ -88,9 +88,42 @@ def with_payment_interceptor(
         payment_requirements_selector: Optional custom selector for payment requirements
 
     Returns:
-        HttpxHooks instance that can be used with httpx clients
+        Dictionary of event hooks that can be directly assigned to client.event_hooks
     """
+    # Create x402Client
     client = x402Client(account, max_value=max_value)
     if payment_requirements_selector:
         client.select_payment_requirements = payment_requirements_selector
-    return HttpxHooks(client)
+
+    # Create hooks
+    hooks = HttpxHooks(client)
+
+    # Return event hooks dictionary
+    return {
+        "request": [hooks.on_request],
+        "response": [hooks.on_response],
+    }
+
+
+class x402HttpxClient(AsyncClient):
+    """AsyncClient with built-in x402 payment handling."""
+
+    def __init__(
+        self,
+        account: Account,
+        max_value: Optional[int] = None,
+        payment_requirements_selector: Optional[Callable] = None,
+        **kwargs,
+    ):
+        """Initialize an AsyncClient with x402 payment handling.
+
+        Args:
+            account: eth_account.Account instance for signing payments
+            max_value: Optional maximum allowed payment amount in base units
+            payment_requirements_selector: Optional custom selector for payment requirements
+            **kwargs: Additional arguments to pass to AsyncClient
+        """
+        super().__init__(**kwargs)
+        self.event_hooks = x402_payment_hooks(
+            account, max_value, payment_requirements_selector
+        )

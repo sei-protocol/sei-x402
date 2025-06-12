@@ -4,7 +4,7 @@ import base64
 from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import Request, Response
 from eth_account import Account
-from x402.clients.httpx import HttpxHooks, with_payment_interceptor
+from x402.clients.httpx import HttpxHooks, x402_payment_hooks, x402HttpxClient
 from x402.clients.base import (
     PaymentError,
 )
@@ -38,7 +38,8 @@ def payment_requirements():
 
 @pytest.fixture
 def hooks(account):
-    return with_payment_interceptor(account)
+    hooks_dict = x402_payment_hooks(account)
+    return hooks_dict["response"][0].__self__
 
 
 @pytest.mark.asyncio
@@ -180,25 +181,66 @@ async def test_on_response_general_error(hooks):
     assert not hooks._is_retry
 
 
-def test_with_payment_interceptor(account):
-    # Test basic interceptor creation
-    hooks = with_payment_interceptor(account)
-    assert isinstance(hooks, HttpxHooks)
-    assert hooks.client.account == account
-    assert hooks.client.max_value is None
+def test_x402_payment_hooks(account):
+    # Test hooks dictionary creation
+    hooks_dict = x402_payment_hooks(account)
+    assert "request" in hooks_dict
+    assert "response" in hooks_dict
+    assert len(hooks_dict["request"]) == 1
+    assert len(hooks_dict["response"]) == 1
 
-    # Test interceptor with max_value
-    hooks = with_payment_interceptor(account, max_value=1000)
-    assert hooks.client.max_value == 1000
+    # Test hooks instance
+    hooks_instance = hooks_dict["response"][0].__self__
+    assert isinstance(hooks_instance, HttpxHooks)
+    assert hooks_instance.client.account == account
+    assert hooks_instance.client.max_value is None
 
-    # Test interceptor with custom selector
+    # Test with max_value
+    hooks_dict = x402_payment_hooks(account, max_value=1000)
+    hooks_instance = hooks_dict["response"][0].__self__
+    assert hooks_instance.client.max_value == 1000
+
+    # Test with custom selector
     def custom_selector(accepts, network_filter=None, scheme_filter=None):
         return accepts[0]
 
-    hooks = with_payment_interceptor(
+    hooks_dict = x402_payment_hooks(
         account, payment_requirements_selector=custom_selector
     )
+    hooks_instance = hooks_dict["response"][0].__self__
     assert (
-        hooks.client.select_payment_requirements
-        != hooks.client.__class__.select_payment_requirements
+        hooks_instance.client.select_payment_requirements
+        != hooks_instance.client.__class__.select_payment_requirements
+    )
+
+
+def test_x402_httpx_client(account):
+    # Test client initialization
+    client = x402HttpxClient(account=account)
+    assert "request" in client.event_hooks
+    assert "response" in client.event_hooks
+
+    # Get the hooks instance
+    hooks_instance = client.event_hooks["response"][0].__self__
+
+    # Test client configuration
+    assert hooks_instance.client.account == account
+    assert hooks_instance.client.max_value is None
+
+    # Test with max_value
+    client = x402HttpxClient(account=account, max_value=1000)
+    hooks_instance = client.event_hooks["response"][0].__self__
+    assert hooks_instance.client.max_value == 1000
+
+    # Test with custom selector
+    def custom_selector(accepts, network_filter=None, scheme_filter=None):
+        return accepts[0]
+
+    client = x402HttpxClient(
+        account=account, payment_requirements_selector=custom_selector
+    )
+    hooks_instance = client.event_hooks["response"][0].__self__
+    assert (
+        hooks_instance.client.select_payment_requirements
+        != hooks_instance.client.__class__.select_payment_requirements
     )
