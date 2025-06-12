@@ -24,7 +24,7 @@ def test_middleware_invalid_payment():
 
     assert response.status_code == 402
     assert "accepts" in response.json()
-    assert "Invalid payment:" in response.json()["error"]
+    assert "Invalid payment header format:" in response.json()["error"]
 
 
 def test_app_middleware_path_matching():
