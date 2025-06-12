@@ -1,6 +1,6 @@
 import time
 import secrets
-from typing import Dict, Any
+from typing import Dict, Any, TypedDict
 from eth_account import Account
 from x402.encoding import safe_base64_encode, safe_base64_decode
 from x402.types import (
@@ -41,8 +41,15 @@ def prepare_payment_header(
     }
 
 
+class PaymentHeader(TypedDict):
+    x402Version: int
+    scheme: str
+    network: str
+    payload: dict[str, Any]
+
+
 def sign_payment_header(
-    account: Account, payment_requirements: PaymentRequirements, header: dict
+    account: Account, payment_requirements: PaymentRequirements, header: PaymentHeader
 ) -> str:
     """Sign a payment header using the account's private key."""
     try:

@@ -9,6 +9,7 @@ from x402.clients.base import (
     PaymentSelectorCallable,
 )
 from x402.types import x402PaymentRequiredResponse
+import copy
 
 
 class x402HTTPAdapter(HTTPAdapter):
@@ -46,7 +47,7 @@ class x402HTTPAdapter(HTTPAdapter):
 
         try:
             # Save the content before we parse it to avoid consuming it
-            content = response.content
+            content = copy.deepcopy(response.content)
 
             # Parse the JSON content without using response.json() which consumes it
             data = json.loads(content.decode("utf-8"))
