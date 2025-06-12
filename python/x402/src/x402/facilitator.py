@@ -1,5 +1,10 @@
 import httpx
-from x402.types import PaymentRequirements, VerifyResponse, SettleResponse
+from x402.types import (
+    PaymentPayload,
+    PaymentRequirements,
+    VerifyResponse,
+    SettleResponse,
+)
 
 
 class FacilitatorClient:
@@ -13,7 +18,7 @@ class FacilitatorClient:
             raise ValueError(f"Invalid URL {url}, must start with http:// or https://")
 
     async def verify(
-        self, payment: str, payment_requirements: PaymentRequirements
+        self, payment: PaymentPayload, payment_requirements: PaymentRequirements
     ) -> VerifyResponse:
         """Verify a payment header is valid and a request should be processed"""
 
@@ -21,7 +26,7 @@ class FacilitatorClient:
             response = await client.post(
                 f"{self.url}/verify",
                 json={
-                    "paymentHeader": payment,
+                    "paymentPayload": payment.model_dump(),
                     "paymentRequirements": payment_requirements.model_dump(),
                 },
                 follow_redirects=True,
@@ -31,15 +36,16 @@ class FacilitatorClient:
             return VerifyResponse(**data)
 
     async def settle(
-        self, payment: str, payment_requirements: PaymentRequirements
+        self, payment: PaymentPayload, payment_requirements: PaymentRequirements
     ) -> SettleResponse:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.url}/settle",
                 json={
-                    "paymentHeader": payment,
+                    "paymentPayload": payment.model_dump(),
                     "paymentRequirements": payment_requirements.model_dump(),
                 },
                 follow_redirects=True,
             )
-            return SettleResponse(**response.json())
+            data = response.json()
+            return SettleResponse(**data)

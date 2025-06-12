@@ -68,16 +68,16 @@ def test_eip3009_authorization_serde():
         from_="0x123",
         to="0x456",
         value="1000",
-        valid_after=0,
-        valid_before=1000,
+        valid_after="0",
+        valid_before="1000",
         nonce="0x789",
     )
     expected = {
         "from": "0x123",
         "to": "0x456",
         "value": "1000",
-        "validAfter": 0,
-        "validBefore": 1000,
+        "validAfter": "0",
+        "validBefore": "1000",
         "nonce": "0x789",
     }
     assert original.model_dump() == expected
@@ -89,8 +89,8 @@ def test_exact_payment_payload_serde():
         from_="0x123",
         to="0x456",
         value="1000",
-        valid_after=0,
-        valid_before=1000,
+        valid_after="0",
+        valid_before="1000",
         nonce="0x789",
     )
     original = ExactPaymentPayload(signature="0x123", authorization=auth)
@@ -107,8 +107,20 @@ def test_verify_response_serde():
 
 
 def test_settle_response_serde():
-    original = SettleResponse(success=True, error=None, tx_hash="0x123", network="base")
-    expected = {"success": True, "error": None, "txHash": "0x123", "network": "base"}
+    original = SettleResponse(
+        success=True,
+        error_reason=None,
+        transaction="0x123",
+        network="base",
+        payer="0x123",
+    )
+    expected = {
+        "success": True,
+        "errorReason": None,
+        "transaction": "0x123",
+        "network": "base",
+        "payer": "0x123",
+    }
     assert original.model_dump() == expected
     assert SettleResponse(**expected) == original
 
@@ -118,8 +130,8 @@ def test_payment_payload_serde():
         from_="0x123",
         to="0x456",
         value="1000",
-        valid_after=0,
-        valid_before=1000,
+        valid_after="0",
+        valid_before="1000",
         nonce="0x789",
     )
     payload = ExactPaymentPayload(signature="0x123", authorization=auth)
@@ -128,14 +140,12 @@ def test_payment_payload_serde():
         scheme="exact",
         network="base",
         payload=payload,
-        resource="/api/v1/resource",
     )
     expected = {
         "x402Version": 1,
         "scheme": "exact",
         "network": "base",
         "payload": payload.model_dump(),
-        "resource": "/api/v1/resource",
     }
     assert original.model_dump() == expected
     assert PaymentPayload(**expected) == original

@@ -1,5 +1,6 @@
 import base64
 import fnmatch
+import json
 import re
 from typing import Any, Callable, Optional
 
@@ -7,10 +8,10 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import validate_call
 
-from x402.chains import get_chain_id
+from x402.chains import get_chain_id, get_token_name, get_token_version
 from x402.common import parse_money, x402_VERSION
 from x402.facilitator import FacilitatorClient
-from x402.types import PaymentRequirements, x402PaymentRequiredResponse
+from x402.types import PaymentPayload, PaymentRequirements, x402PaymentRequiredResponse
 
 
 def get_usdc_address(chain_id: int | str) -> str:
@@ -111,47 +112,81 @@ def require_payment(
         # Get resource URL if not explicitly provided
         resource_url = resource or str(request.url)
 
+        # Ensure output_schema and extra are objects, not null
+        output_schema_obj = {} if output_schema is None else output_schema
+
+        # Get token name and version for EIP-712 signing
+        chain_id = get_chain_id(network_id)
+        token_name = get_token_name(chain_id, asset)
+        token_version = get_token_version(chain_id, asset)
+
         # Construct payment details
-        payment_details = PaymentRequirements(
-            scheme="exact",
-            network=network_id,
-            asset=asset,
-            max_amount_required=str(parsed_amount),
-            resource=resource_url,
-            description=description,
-            mime_type=mime_type,
-            pay_to=pay_to_address,
-            max_timeout_seconds=max_deadline_seconds,
-            output_schema=output_schema,
-            extra=None,
-        )
+        payment_requirements = [
+            PaymentRequirements(
+                scheme="exact",
+                network=network_id,
+                asset=asset,
+                max_amount_required=str(parsed_amount),
+                resource=resource_url,
+                description=description,
+                mime_type=mime_type,
+                pay_to=pay_to_address,
+                max_timeout_seconds=max_deadline_seconds,
+                output_schema=output_schema_obj,
+                extra={
+                    "name": token_name,
+                    "version": token_version,
+                },
+            )
+        ]
 
         def x402_response(error: str):
             return JSONResponse(
                 content=x402PaymentRequiredResponse(
                     x402_version=x402_VERSION,
-                    accepts=[payment_details],
+                    accepts=payment_requirements,
                     error=error,
                 ).model_dump(),
                 status_code=402,
             )
 
         # Check for payment header
-        payment = request.headers.get("X-PAYMENT", "")
+        payment_header = request.headers.get("X-PAYMENT", "")
 
-        if payment == "":  # Return JSON response for API requests
+        if payment_header == "":  # Return JSON response for API requests
             # TODO: add support for html paywall
-
             return x402_response("No X-PAYMENT header provided")
 
-        # Verify payment
+        # Decode payment header
+        try:
+            # TODO: replace with encoding.py's decode function when it's ready
+            payment_dict = json.loads(base64.b64decode(payment_header).decode("utf-8"))
+            payment = PaymentPayload(**payment_dict)
+        except Exception as e:
+            return x402_response(f"Invalid payment header format: {str(e)}")
 
-        verify_response = await facilitator.verify(payment, payment_details)
+        # Find matching payment requirements
+        selected_payment_requirements = next(
+            (
+                req
+                for req in payment_requirements
+                if req.scheme == payment.scheme and req.network == payment.network
+            ),
+            None,
+        )
+
+        if not selected_payment_requirements:
+            return x402_response("No matching payment requirements found")
+
+        # Verify payment
+        verify_response = await facilitator.verify(
+            payment, selected_payment_requirements
+        )
 
         if not verify_response.is_valid:
             return x402_response("Invalid payment: " + verify_response.invalid_reason)
 
-        request.state.payment_details = payment_details
+        request.state.payment_details = selected_payment_requirements
         request.state.verify_response = verify_response
 
         # Process the request
@@ -163,7 +198,9 @@ def require_payment(
 
         # Settle the payment
         try:
-            settle_response = await facilitator.settle(payment, payment_details)
+            settle_response = await facilitator.settle(
+                payment, selected_payment_requirements
+            )
             if settle_response.success:
                 response.headers["X-PAYMENT-RESPONSE"] = base64.b64encode(
                     settle_response.model_dump_json().encode("utf-8")

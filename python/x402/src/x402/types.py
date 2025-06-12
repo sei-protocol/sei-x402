@@ -60,8 +60,8 @@ class EIP3009Authorization(BaseModel):
     from_: str = Field(alias="from")
     to: str
     value: str
-    valid_after: int
-    valid_before: int
+    valid_after: str
+    valid_before: str
     nonce: str
 
     model_config = ConfigDict(
@@ -95,9 +95,10 @@ class VerifyResponse(BaseModel):
 
 class SettleResponse(BaseModel):
     success: bool
-    error: Optional[str] = None
-    tx_hash: Optional[str]
+    error_reason: Optional[str] = None
+    transaction: Optional[str]
     network: Optional[str]
+    payer: Optional[str]
 
     model_config = ConfigDict(
         alias_generator=to_camel,
@@ -116,7 +117,6 @@ class PaymentPayload(BaseModel):
     scheme: str
     network: str
     payload: SchemePayloads
-    resource: str
 
     model_config = ConfigDict(
         alias_generator=to_camel,
