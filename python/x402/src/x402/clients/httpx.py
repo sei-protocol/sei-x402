@@ -1,10 +1,11 @@
-from typing import Optional, Callable, Dict
+from typing import Optional, Dict, List
 from httpx import Request, Response, AsyncClient
 from eth_account import Account
 from x402.clients.base import (
     x402Client,
     MissingRequestConfigError,
     PaymentError,
+    PaymentSelectorCallable,
 )
 from x402.types import x402PaymentRequiredResponse
 
@@ -47,7 +48,7 @@ class HttpxHooks:
 
             # Create payment header
             payment_header = self.client.create_payment_header(
-                payment_response.x402_version, selected_requirements
+                selected_requirements, payment_response.x402_version
             )
 
             # Mark as retry and add payment header
@@ -78,22 +79,26 @@ class HttpxHooks:
 def x402_payment_hooks(
     account: Account,
     max_value: Optional[int] = None,
-    payment_requirements_selector: Optional[Callable] = None,
-) -> Dict[str, list]:
+    payment_requirements_selector: Optional[PaymentSelectorCallable] = None,
+) -> Dict[str, List]:
     """Create httpx event hooks dictionary for handling 402 Payment Required responses.
 
     Args:
         account: eth_account.Account instance for signing payments
         max_value: Optional maximum allowed payment amount in base units
-        payment_requirements_selector: Optional custom selector for payment requirements
+        payment_requirements_selector: Optional custom selector for payment requirements.
+            Should be a callable that takes (accepts, network_filter, scheme_filter, max_value)
+            and returns a PaymentRequirements object.
 
     Returns:
         Dictionary of event hooks that can be directly assigned to client.event_hooks
     """
     # Create x402Client
-    client = x402Client(account, max_value=max_value)
-    if payment_requirements_selector:
-        client.select_payment_requirements = payment_requirements_selector
+    client = x402Client(
+        account,
+        max_value=max_value,
+        payment_requirements_selector=payment_requirements_selector,
+    )
 
     # Create hooks
     hooks = HttpxHooks(client)
@@ -112,7 +117,7 @@ class x402HttpxClient(AsyncClient):
         self,
         account: Account,
         max_value: Optional[int] = None,
-        payment_requirements_selector: Optional[Callable] = None,
+        payment_requirements_selector: Optional[PaymentSelectorCallable] = None,
         **kwargs,
     ):
         """Initialize an AsyncClient with x402 payment handling.
@@ -120,7 +125,9 @@ class x402HttpxClient(AsyncClient):
         Args:
             account: eth_account.Account instance for signing payments
             max_value: Optional maximum allowed payment amount in base units
-            payment_requirements_selector: Optional custom selector for payment requirements
+            payment_requirements_selector: Optional custom selector for payment requirements.
+                Should be a callable that takes (accepts, network_filter, scheme_filter, max_value)
+                and returns a PaymentRequirements object.
             **kwargs: Additional arguments to pass to AsyncClient
         """
         super().__init__(**kwargs)

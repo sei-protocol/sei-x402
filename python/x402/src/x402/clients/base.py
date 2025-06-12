@@ -1,5 +1,5 @@
 import time
-from typing import Optional, Callable, Dict, Any
+from typing import Optional, Callable, Dict, Any, List, Union
 from eth_account import Account
 from x402.exact import sign_payment_header
 from x402.types import (
@@ -10,6 +10,13 @@ from x402.common import x402_VERSION
 import secrets
 from x402.encoding import safe_base64_decode
 import json
+
+# Define type for the payment requirements selector
+PaymentRequirementsType = Union[Dict[str, Any], PaymentRequirements]
+PaymentSelectorCallable = Callable[
+    [List[PaymentRequirementsType], Optional[str], Optional[str], Optional[int]],
+    PaymentRequirements,
+]
 
 
 def decode_x_payment_response(header: str) -> Dict[str, Any]:
@@ -61,7 +68,7 @@ class x402Client:
         self,
         account: Account,
         max_value: Optional[int] = None,
-        payment_requirements_selector: Optional[Callable] = None,
+        payment_requirements_selector: Optional[PaymentSelectorCallable] = None,
     ):
         """Initialize the x402 client.
 
@@ -72,14 +79,16 @@ class x402Client:
         """
         self.account = account
         self.max_value = max_value
-        if payment_requirements_selector:
-            self.select_payment_requirements = payment_requirements_selector
+        self._payment_requirements_selector = (
+            payment_requirements_selector or self.default_payment_requirements_selector
+        )
 
-    def select_payment_requirements(
-        self,
-        accepts: list,
+    @staticmethod
+    def default_payment_requirements_selector(
+        accepts: List[PaymentRequirementsType],
         network_filter: Optional[str] = None,
         scheme_filter: Optional[str] = None,
+        max_value: Optional[int] = None,
     ) -> PaymentRequirements:
         """Select payment requirements from the list of accepted requirements.
 
@@ -87,9 +96,10 @@ class x402Client:
             accepts: List of accepted payment requirements
             network_filter: Optional network to filter by
             scheme_filter: Optional scheme to filter by
+            max_value: Optional maximum allowed payment amount
 
         Returns:
-            Selected payment requirements
+            Selected payment requirements (PaymentRequirements instance from x402.types)
 
         Raises:
             UnsupportedSchemeException: If no supported scheme is found
@@ -117,32 +127,55 @@ class x402Client:
                 )
 
                 # Check max value if set
-                if self.max_value is not None:
+                if max_value is not None:
                     max_amount = int(result.max_amount_required)
-                    if max_amount > self.max_value:
+                    if max_amount > max_value:
                         raise PaymentAmountExceededError(
-                            f"Payment amount {max_amount} exceeds maximum allowed value {self.max_value}"
+                            f"Payment amount {max_amount} exceeds maximum allowed value {max_value}"
                         )
 
                 return result
 
         raise UnsupportedSchemeException("No supported payment scheme found")
 
+    def select_payment_requirements(
+        self,
+        accepts: List[PaymentRequirementsType],
+        network_filter: Optional[str] = None,
+        scheme_filter: Optional[str] = None,
+    ) -> PaymentRequirements:
+        """Select payment requirements using the configured selector.
+
+        Args:
+            accepts: List of accepted payment requirements (either dicts or PaymentRequirements instances)
+            network_filter: Optional network to filter by
+            scheme_filter: Optional scheme to filter by
+
+        Returns:
+            Selected payment requirements (PaymentRequirements instance from x402.types)
+
+        Raises:
+            UnsupportedSchemeException: If no supported scheme is found
+            PaymentAmountExceededError: If payment amount exceeds max_value
+        """
+        return self._payment_requirements_selector(
+            accepts, network_filter, scheme_filter, self.max_value
+        )
+
     def create_payment_header(
         self,
+        payment_requirements: PaymentRequirements,
         x402_version: int = x402_VERSION,
-        payment_requirements: PaymentRequirements = None,
     ) -> str:
         """Create a payment header for the given requirements.
 
         Args:
-            x402_version: x402 protocol version
             payment_requirements: Selected payment requirements
+            x402_version: x402 protocol version
 
         Returns:
             Signed payment header
         """
-
         unsigned_header = {
             "x402Version": x402_version,
             "scheme": payment_requirements.scheme,

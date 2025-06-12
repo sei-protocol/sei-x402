@@ -42,7 +42,6 @@ def hooks(account):
     return hooks_dict["response"][0].__self__
 
 
-@pytest.mark.asyncio
 async def test_on_response_success(hooks):
     # Test successful response (200)
     response = Response(200)
@@ -50,7 +49,6 @@ async def test_on_response_success(hooks):
     assert result == response
 
 
-@pytest.mark.asyncio
 async def test_on_response_non_402(hooks):
     # Test non-402 response
     response = Response(404)
@@ -58,7 +56,6 @@ async def test_on_response_non_402(hooks):
     assert result == response
 
 
-@pytest.mark.asyncio
 async def test_on_response_retry(hooks):
     # Test retry response
     response = Response(402)
@@ -67,7 +64,6 @@ async def test_on_response_retry(hooks):
     assert result == response
 
 
-@pytest.mark.asyncio
 async def test_on_response_missing_request(hooks):
     # Test missing request configuration
     response = Response(402)
@@ -79,7 +75,6 @@ async def test_on_response_missing_request(hooks):
         await hooks.on_response(response)
 
 
-@pytest.mark.asyncio
 async def test_on_response_payment_flow(hooks, payment_requirements):
     # Mock the payment required response
     payment_response = x402PaymentRequiredResponse(
@@ -139,11 +134,10 @@ async def test_on_response_payment_flow(hooks, payment_requirements):
             [payment_requirements]
         )
         hooks.client.create_payment_header.assert_called_once_with(
-            1, payment_requirements
+            payment_requirements, 1
         )
 
 
-@pytest.mark.asyncio
 async def test_on_response_payment_error(hooks, payment_requirements):
     # Mock the payment required response with unsupported scheme
     payment_requirements.scheme = "unsupported"
@@ -166,7 +160,6 @@ async def test_on_response_payment_error(hooks, payment_requirements):
     assert not hooks._is_retry
 
 
-@pytest.mark.asyncio
 async def test_on_response_general_error(hooks):
     # Create initial 402 response with invalid JSON
     response = Response(402)

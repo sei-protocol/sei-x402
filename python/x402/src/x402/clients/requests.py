@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from typing import Optional
 import requests
 import json
 from requests.adapters import HTTPAdapter
@@ -6,6 +6,7 @@ from eth_account import Account
 from x402.clients.base import (
     x402Client,
     PaymentError,
+    PaymentSelectorCallable,
 )
 from x402.types import x402PaymentRequiredResponse
 
@@ -58,7 +59,7 @@ class x402HTTPAdapter(HTTPAdapter):
 
             # Create payment header
             payment_header = self.client.create_payment_header(
-                payment_response.x402_version, selected_requirements
+                selected_requirements, payment_response.x402_version
             )
 
             # Mark as retry and add payment header
@@ -85,7 +86,7 @@ class x402HTTPAdapter(HTTPAdapter):
 def create_x402_adapter(
     account: Account,
     max_value: Optional[int] = None,
-    payment_requirements_selector: Optional[Callable] = None,
+    payment_requirements_selector: Optional[PaymentSelectorCallable] = None,
     **kwargs,
 ) -> x402HTTPAdapter:
     """Create an HTTP adapter that handles 402 Payment Required responses.
@@ -93,22 +94,26 @@ def create_x402_adapter(
     Args:
         account: eth_account.Account instance for signing payments
         max_value: Optional maximum allowed payment amount in base units
-        payment_requirements_selector: Optional custom selector for payment requirements
+        payment_requirements_selector: Optional custom selector for payment requirements.
+            Should be a callable that takes (accepts, network_filter, scheme_filter, max_value)
+            and returns a PaymentRequirements object.
         **kwargs: Additional arguments to pass to HTTPAdapter
 
     Returns:
         x402HTTPAdapter instance that can be mounted to a requests session
     """
-    client = x402Client(account, max_value=max_value)
-    if payment_requirements_selector:
-        client.select_payment_requirements = payment_requirements_selector
+    client = x402Client(
+        account,
+        max_value=max_value,
+        payment_requirements_selector=payment_requirements_selector,
+    )
     return x402HTTPAdapter(client, **kwargs)
 
 
 def create_x402_session(
     account: Account,
     max_value: Optional[int] = None,
-    payment_requirements_selector: Optional[Callable] = None,
+    payment_requirements_selector: Optional[PaymentSelectorCallable] = None,
     **kwargs,
 ) -> requests.Session:
     """Create a requests session with x402 payment handling.
@@ -116,7 +121,9 @@ def create_x402_session(
     Args:
         account: eth_account.Account instance for signing payments
         max_value: Optional maximum allowed payment amount in base units
-        payment_requirements_selector: Optional custom selector for payment requirements
+        payment_requirements_selector: Optional custom selector for payment requirements.
+            Should be a callable that takes (accepts, network_filter, scheme_filter, max_value)
+            and returns a PaymentRequirements object.
         **kwargs: Additional arguments to pass to HTTPAdapter
 
     Returns:

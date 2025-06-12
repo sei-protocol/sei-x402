@@ -190,7 +190,7 @@ def test_adapter_payment_flow(adapter, payment_requirements):
             [payment_requirements]
         )
         adapter.client.create_payment_header.assert_called_once_with(
-            1, payment_requirements
+            payment_requirements, 1
         )
 
         # Verify the retry request was made with correct headers

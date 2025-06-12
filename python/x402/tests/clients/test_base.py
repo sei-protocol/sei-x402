@@ -138,7 +138,7 @@ def test_select_payment_requirements_amount_exceeded(client, payment_requirement
 
 
 def test_create_payment_header(client, payment_requirements):
-    header = client.create_payment_header(1, payment_requirements)
+    header = client.create_payment_header(payment_requirements, 1)
 
     # Test header is a non-empty string
     assert isinstance(header, str)
