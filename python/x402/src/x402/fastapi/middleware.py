@@ -12,6 +12,7 @@ from x402.chains import get_chain_id, get_token_name, get_token_version
 from x402.common import parse_money, x402_VERSION
 from x402.facilitator import FacilitatorClient
 from x402.types import PaymentPayload, PaymentRequirements, x402PaymentRequiredResponse
+from x402.encoding import safe_base64_decode
 
 
 def get_usdc_address(chain_id: int | str) -> str:
@@ -159,8 +160,7 @@ def require_payment(
 
         # Decode payment header
         try:
-            # TODO: replace with encoding.py's decode function when it's ready
-            payment_dict = json.loads(base64.b64decode(payment_header).decode("utf-8"))
+            payment_dict = json.loads(safe_base64_decode(payment_header))
             payment = PaymentPayload(**payment_dict)
         except Exception as e:
             return x402_response(f"Invalid payment header format: {str(e)}")

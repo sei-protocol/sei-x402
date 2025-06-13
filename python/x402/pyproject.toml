@@ -10,10 +10,13 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "eth-account>=0.13.7",
+    "eth-typing>=4.0.0",
+    "eth-utils>=3.0.0",
     "fastapi[standard]>=0.115.12",
-    "httpx>=0.28.1",
     "pydantic>=2.11.4",
-    "web3>=7.11.1",
+    "pydantic-settings>=2.2.1",
+    "python-dotenv>=1.0.1",
+    "web3>=6.0.0",
 ]
 
 [project.scripts]
@@ -32,3 +35,9 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/x402"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
