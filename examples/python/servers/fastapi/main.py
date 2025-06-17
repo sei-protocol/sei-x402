@@ -11,11 +11,10 @@ from x402.fastapi.middleware import require_payment
 load_dotenv()
 
 # Get configuration from environment
-FACILITATOR_URL = os.getenv("FACILITATOR_URL")
 NETWORK = os.getenv("NETWORK", "base-sepolia")
 ADDRESS = os.getenv("ADDRESS")
 
-if not FACILITATOR_URL or not ADDRESS:
+if not ADDRESS:
     raise ValueError("Missing required environment variables")
 
 app = FastAPI()
@@ -27,7 +26,6 @@ app.middleware("http")(
         pay_to_address=ADDRESS,
         path="/weather",
         network_id=NETWORK,
-        facilitator_url=FACILITATOR_URL,
     )
 )
 
@@ -38,7 +36,6 @@ app.middleware("http")(
         pay_to_address=ADDRESS,
         path="/premium/*",
         network_id=NETWORK,
-        facilitator_url=FACILITATOR_URL,
     )
 )
 
