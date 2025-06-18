@@ -1,6 +1,6 @@
-# x402 fastapi Example Server
+# x402 Mainnet Example Server
 
-This is an example FastAPI server that demonstrates how to use the x402 `fastapi` middleware to implement paywall functionality in your API endpoints.
+This example demonstrates how to accept real USDC payments on Base mainnet using Coinbase's [hosted x402 facilitator](https://docs.cdp.coinbase.com/x402/docs/welcome).
 
 ## Prerequisites
 
@@ -26,27 +26,3 @@ uv run python main.py
 ```
 
 The server will start on http://localhost:4021
-
-## Extending the Example
-
-To add more paid endpoints, follow this pattern:
-
-```python
-# First, configure the payment middleware with your routes
-app.middleware("http")(
-    require_payment(
-        amount="$0.10",
-        pay_to_address=ADDRESS,
-        path="/your-endpoint",
-        network_id=NETWORK,
-        facilitator_url=FACILITATOR_URL,
-    )
-)
-
-# Then define your routes as normal
-@app.get("/your-endpoint")
-async def your_endpoint():
-    return {
-        # Your response data
-    }
-```
