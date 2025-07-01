@@ -295,7 +295,7 @@ export const config = {
 6. **Integrate with Farcaster data** using the Frame SDK
 7. **Deploy to your domain** for Mini App distribution
 
-4. **Add your frame to your account**:
+8. **Add your frame to your account**:
    - Cast your frame to see it in action
    - Share your frame with others to start building your community
 
