@@ -56,35 +56,6 @@ NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_client_api_key_here
 
 Once set up, your x402 paywall will automatically use Secure Init for onramp functionality when users need to fund their wallets.
 
-### Testing
-
-Test the session token API directly:
-
-**Note**: Replace `YOUR_WALLET_ADDRESS` with an actual wallet address (like one from MetaMask). In production, this address comes from the user's connected wallet.
-
-```bash
-# Replace YOUR_WALLET_ADDRESS with the actual connected wallet address
-curl -X POST http://localhost:3000/api/x402/session-token \
-  -H "Content-Type: application/json" \
-  -d '{
-    "addresses": [
-      {
-        "address": "YOUR_WALLET_ADDRESS",
-        "blockchains": ["ethereum", "base"]
-      }
-    ],
-    "assets": ["ETH", "USDC"]
-  }'
-```
-
-Expected response:
-```json
-{
-  "success": true,
-  "token": "session_token_string",
-  "channelId": "channel_id_string"
-}
-```
 
 ## How It Works
 
