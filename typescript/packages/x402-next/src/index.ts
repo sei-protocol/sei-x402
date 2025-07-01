@@ -21,6 +21,8 @@ import {
 } from "x402/types";
 import { useFacilitator } from "x402/verify";
 
+import { POST } from "./api/session-token";
+
 /**
  * Creates a payment middleware factory for Next.js
  *
@@ -77,7 +79,6 @@ import { useFacilitator } from "x402/verify";
  *   },
  *   {
  *     cdpClientKey: 'your-cdp-client-key',
- *     cdpProjectId: 'your-cdp-project-id',
  *     appLogo: '/images/logo.svg',
  *     appName: 'My App',
  *   }
@@ -164,7 +165,6 @@ export function paymentMiddleware(
               currentUrl: request.url,
               testnet: network === "base-sepolia",
               cdpClientKey: paywall?.cdpClientKey,
-              cdpProjectId: paywall?.cdpProjectId,
               appLogo: paywall?.appLogo,
               appName: paywall?.appName,
             });
@@ -276,3 +276,6 @@ export type {
   RouteConfig,
   RoutesConfig,
 } from "x402/types";
+
+// Export session token API handlers for Onramp
+export { POST };
