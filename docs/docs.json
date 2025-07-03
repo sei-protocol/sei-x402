@@ -1,0 +1,81 @@
+{
+	"$schema": "https://mintlify.com/mint.json",
+	"name": "x402 Documentation",
+	"theme": "mint",
+	"logo": {
+		"dark": "https://cdn.sei.io/sei.svg",
+		"light": "https://cdn.sei.io/sei.svg"
+	},
+	"description": "Official documentation for x402 Protocol - HTTP micropayments for the Sei Network and beyond. Build paid APIs, premium content, and micropayment systems.",
+	"favicon": "/favicon.ico",
+	"colors": {
+		"primary": "#9E1F19",
+		"light": "#B52A2A",
+		"dark": "#780000"
+	},
+	"contextual": {
+		"options": ["copy", "chatgpt", "claude"]
+	},
+	"navigation": {
+		"global": {
+			"anchors": [
+				{
+					"anchor": "Sei Documentation",
+					"icon": "book-open-cover",
+					"href": "https://docs.sei.io"
+				},
+				{
+					"anchor": "GitHub",
+					"icon": "github",
+					"href": "https://github.com/sei-protocol/sei-x402"
+				},
+				{
+					"anchor": "Sei Network",
+					"icon": "globe",
+					"href": "https://sei.io"
+				}
+			]
+		},
+		"dropdowns": [
+			{
+				"dropdown": "Getting Started",
+				"icon": "rocket",
+				"pages": [
+					{
+						"group": "Introduction",
+						"pages": ["introduction", "overview", "quickstart"]
+					}
+				]
+			},
+			{
+				"dropdown": "Facilitators",
+				"description": "Verifying and settling payments",
+				"icon": "server",
+				"pages": [
+					{
+						"group": "Getting Started",
+						"pages": ["facilitators/introduction", "facilitators/example"]
+					}
+				]
+			},
+			{
+				"dropdown": "Client Integration",
+				"description": "Make x402 payments",
+				"icon": "code",
+				"pages": [
+					{
+						"group": "HTTP Clients",
+						"pages": ["clients/fetch"]
+					}
+				]
+			}
+		]
+	},
+	"footer": {
+		"socials": {
+			"github": "https://github.com/sei-protocol/sei-x402",
+			"discord": "https://discord.gg/sei",
+			"x": "https://x.com/SeiNetwork"
+		}
+	}
+}
