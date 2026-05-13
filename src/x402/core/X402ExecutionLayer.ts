@@ -26,4 +26,6 @@ export class X402ExecutionLayer {
     this.lastHash = hash;
     return batch;
   }
+
+  getHeight() { return this.height; }
 }

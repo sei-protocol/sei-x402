@@ -20,6 +20,10 @@ export class X402Mempool extends EventEmitter {
   }
 
   getStats() {
-    return { height: 0, queueSize: this.queue.length, startTime: this.startTime };
+    return { 
+      height: this.executionLayer.getHeight(), 
+      queueSize: this.queue.length, 
+      startTime: this.startTime 
+    };
   }
 }
