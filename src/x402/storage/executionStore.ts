@@ -1,20 +1,13 @@
 import fs from "fs";
-import { ExecutionBatch } from "../types";
-import { safeStringify } from "../utils/jsonCodec";
-
+import { safeStringify } from "../utils/jsonCodec.ts";
 const FILE = "./execution_chain.json";
 
 export class ExecutionStore {
-  static loadAll(): ExecutionBatch[] {
+  static loadAll() {
     if (!fs.existsSync(FILE)) return [];
-    try {
-      return JSON.parse(fs.readFileSync(FILE, "utf-8"));
-    } catch {
-      return [];
-    }
+    return JSON.parse(fs.readFileSync(FILE, "utf-8"));
   }
-
-  static save(batch: ExecutionBatch): void {
+  static save(batch: any) {
     const all = ExecutionStore.loadAll();
     all.push(batch);
     fs.writeFileSync(FILE, safeStringify(all));

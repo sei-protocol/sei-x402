@@ -1,6 +1,6 @@
 import fs from "fs";
-import { ExecutionBatch } from "../types";
-import { safeStringify } from "../utils/jsonCodec";
+import { ExecutionBatch } from "../types.ts";
+import { safeStringify } from "../utils/jsonCodec.ts";
 
 export class BatchStore {
   static basePath = "./batches";
