@@ -2,7 +2,6 @@ import { X402Mempool } from "./src/x402/core/X402Mempool";
 import express from "express";
 
 const mempool = new X402Mempool();
-(mempool as any).startTime = Date.now();
 
 mempool.on("batch_executed", (batch: any) => {
   console.log(`\n=== BATCH #${batch.height} ===`);
@@ -36,33 +35,24 @@ app.post("/ingest", (req, res) => {
 
 const PORT = 4020;
 app.listen(PORT, () => {
-  console.log(`\n🌐 X402 API running on http://localhost:${PORT}`);
+  console.log(`\n🌐 X402 API running → http://localhost:${PORT}`);
 });
 
-console.log("✅ X402 Full System Started - All Layers Loaded");
-console.log("Press Ctrl+C to stop\n");
+console.log("X402 System Ready — All Layers Loaded");
 
 let counter = 0;
 setInterval(() => {
-  for (let i = 0; i < 5; i++) {
-    mempool.ingest({
-      payment: {
-        id: `tx-${Date.now()}-${counter}`,
-        amount: BigInt(500 + Math.floor(Math.random() * 5000)),
-        fee: BigInt(30 + Math.floor(Math.random() * 300)),
-        nonce: counter++,
-        recipient: "0x" + Math.random().toString(16).slice(2, 42),
-        signature: ["0xsig1", "0xsig2"]
-      },
-      sourceChain: 8453,
-      proofHash: "0x" + Math.random().toString(16),
-      timestamp: Date.now()
-    });
-  }
-}, 700);
-
-process.on("SIGINT", () => {
-  console.log("\nShutting down X402...");
-  mempool.stop();
-  process.exit(0);
-});
+  mempool.ingest({
+    payment: {
+      id: `tx-${Date.now()}-${counter}`,
+      amount: BigInt(1000),
+      fee: BigInt(50),
+      nonce: counter++,
+      recipient: "0xKeeper",
+      signature: ["0xsig"]
+    },
+    sourceChain: 8453,
+    proofHash: "0xProof",
+    timestamp: Date.now()
+  });
+}, 1000);
