@@ -16,5 +16,6 @@
   },
   "workspaces": [
     "typescript/packages/*"
-  ]
+  ],
+  "type": "module"
 }
