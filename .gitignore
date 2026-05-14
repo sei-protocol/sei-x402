@@ -1,31 +1,27 @@
-# CDK / AWS
-cdk.out/
-.cdk.staging/
-*.js
-*.d.ts
-
-# Node
+# --- X402 SOVEREIGN STACK ROOT IGNORE ---
+# Dependencies
 node_modules/
-pnpm-lock.yaml   # or keep if you want it versioned
+pnpm-debug.log
+.pnpm-debug.log
 
-# Python
-__pycache__/
-*.pyc
-.venv/
-
-# Env / secrets
-.env
-.env.local
-
-# IDE
-.idea/
-*.iml
-
-# macOS
-**/.DS_Store
-
-# Misc
+# Build Artifacts (Keep source, hide binaries)
 dist/
 build/
-sovereign.key
-*.py
+*.so
+*.dylib
+*.dll
+
+# CDK / AWS Specifics
+cdk.out/
+.cdk.staging/
+
+# Environmental Secrets
+.env
+*.key
+*.pem
+
+# DO NOT IGNORE (Crucial for CI/CD and Engine Integrity)
+!pnpm-lock.yaml
+!typescript/eslint.config.js
+!src/x402/types.ts
+!**/__init__.py

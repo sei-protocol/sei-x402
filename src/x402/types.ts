@@ -1,3 +1,4 @@
+/** X402 CORE TYPES - VERIFIED EXPORT **/
 export interface Payment {
   id: string;
   amount: bigint;
