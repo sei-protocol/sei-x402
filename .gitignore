@@ -1,27 +1,21 @@
-# --- X402 SOVEREIGN STACK ROOT IGNORE ---
-# Dependencies
+# Environment & Dependencies
+.venv/
 node_modules/
-pnpm-debug.log
-.pnpm-debug.log
+__pycache__/
+*.py[cod]
 
-# Build Artifacts (Keep source, hide binaries)
+# Build Artifacts
 dist/
 build/
-*.so
-*.dylib
-*.dll
-
-# CDK / AWS Specifics
 cdk.out/
 .cdk.staging/
 
-# Environmental Secrets
+# Secrets
 .env
 *.key
 *.pem
 
-# DO NOT IGNORE (Crucial for CI/CD and Engine Integrity)
+# Explicit Tracking
 !pnpm-lock.yaml
 !typescript/eslint.config.js
-!src/x402/types.ts
 !**/__init__.py

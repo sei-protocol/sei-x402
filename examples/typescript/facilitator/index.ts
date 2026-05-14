@@ -1,43 +1,42 @@
 import { Web3 } from 'web3';
 
-/**
- * X402_FACILITATOR_ENGINE v1.0
- * Optimized for Sei/EVM gas abstraction and sovereign attribution.
- */
+export interface FacilitatorConfig {
+    rpcUrl: string;
+    relayerPrivateKey: string;
+    contractAddress: string;
+    abi: any;
+}
+
 export class X402Facilitator {
-    constructor(
-        private w3: Web3,
-        private relayerPrivateKey: string,
-        private facilitatorContract: any
-    ) {}
+    private w3: Web3;
+    private relayerAccount: any;
+    private contract: any;
 
-    async facilitate(userWallet: string, amount: string) {
-        const relayer = this.w3.eth.accounts.privateKeyToAccount(this.relayerPrivateKey);
+    constructor(config: FacilitatorConfig) {
+        this.w3 = new Web3(config.rpcUrl);
+        this.relayerAccount = this.w3.eth.accounts.privateKeyToAccount(config.relayerPrivateKey);
+        this.contract = new this.w3.eth.Contract(config.abi, config.contractAddress);
+    }
+
+    async facilitatePayment(userWallet: string, amount: string) {
+        const method = this.contract.methods.facilitatePayment(userWallet, amount);
         
-        // 1. Encode the call with the user's wallet as an internal parameter
-        const callData = this.facilitatorContract.methods
-            .facilitatePayment(userWallet, amount)
-            .encodeABI();
+        const [gasPrice, nonce, estimate] = await Promise.all([
+            this.w3.eth.getGasPrice(),
+            this.w3.eth.getTransactionCount(this.relayerAccount.address),
+            method.estimateGas({ from: this.relayerAccount.address })
+        ]);
 
-        // 2. Estimate gas with a 20% safety buffer for network volatility
-        const estimatedGas = await this.facilitatorContract.methods
-            .facilitatePayment(userWallet, amount)
-            .estimateGas({ from: relayer.address });
-        
-        const safeGasLimit = Math.floor(Number(estimatedGas) * 1.2);
-
-        // 3. Build the transaction - Attribution matches the Signer
-        const txConfig = {
-            from: relayer.address, 
-            to: this.facilitatorContract.options.address,
-            data: callData,
-            gas: safeGasLimit,
-            gasPrice: await this.w3.eth.getGasPrice(),
-            nonce: await this.w3.eth.getTransactionCount(relayer.address)
+        const tx = {
+            from: this.relayerAccount.address,
+            to: this.contract.options.address,
+            data: method.encodeABI(),
+            gas: Math.floor(Number(estimate) * 1.15),
+            gasPrice: gasPrice,
+            nonce: nonce
         };
 
-        // 4. Sign and Broadcast
-        const signed = await this.w3.eth.accounts.signTransaction(txConfig, this.relayerPrivateKey);
-        return this.w3.eth.sendSignedTransaction(signed.rawTransaction);
+        const signed = await this.w3.eth.accounts.signTransaction(tx, this.relayerAccount.privateKey);
+        return await this.w3.eth.sendSignedTransaction(signed.rawTransaction);
     }
 }
